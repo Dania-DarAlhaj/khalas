@@ -1,136 +1,292 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import '../style/PhotographerDetails.css';
+import "../style/PhotographerDetails.css";
+
 export default function PhotographerDetails() {
   const { ownerId } = useParams();
-  const [photographer, setPhotographer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userRating, setUserRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
+  const userId = sessionStorage.getItem("userId_");
 
-  // فحص تسجيل الدخول
-  const userId = sessionStorage.getItem("userId_"); // نفس اللي مخزنه عند تسجيل الدخول
+  const [photographer, setPhotographer] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+
+  const [canRate, setCanRate] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+const [packages, setPackages] = useState([]);
+const [loadingPackages, setLoadingPackages] = useState(true);
+
+  const [loading, setLoading] = useState(true);
+  const [loadingComments, setLoadingComments] = useState(true);
+  const [error, setError] = useState(null);
+
+  /* ================= FETCH DATA ================= */
 
   useEffect(() => {
     if (!ownerId) return;
 
-    const fetchPhotographer = async () => {
-      setLoading(true);
-      try {
-        const { data: ownerData, error: ownerError } = await supabase
-          .from("owners")
-          .select("owner_id, user_id, rate, description, rating_count")
-          .eq("owner_id", ownerId)
-          .single();
-
-        if (ownerError) throw ownerError;
-
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("id, name, phone, city")
-          .eq("id", ownerData.user_id)
-          .single();
-
-        if (userError) throw userError;
-
-        setPhotographer({
-          owner_id: ownerData.owner_id,
-          user_id: ownerData.user_id,
-          name: userData.name,
-          phone: userData.phone,
-          city: userData.city,
-          rate: ownerData.rate,
-          description: ownerData.description,
-          rating_count: ownerData.rating_count,
-        });
-      } catch (err) {
-        console.error("Error fetching photographer details:", err);
-        setError("Failed to load photographer details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPhotographer();
-  }, [ownerId]);
+    fetchComments();
+    checkReservation();
+  }, [ownerId, userId]);
 
-  if (loading) return <p>Loading photographer details...</p>;
-  if (error) return <p>{error}</p>;
-  if (!photographer) return <p>No photographer found.</p>;
+  const fetchPhotographer = async () => {
+    try {
+      const { data: owner, error: ownerError } = await supabase
+        .from("owners")
+        .select("owner_id, user_id, rate, description, rating_count")
+        .eq("owner_id", ownerId)
+        .single();
 
-  const getStarColor = (starNumber) => {
-    if (hoverRating >= starNumber) return "#FFD700";
-    if (!hoverRating && photographer.rate >= starNumber) return "#FFD700";
-    return "#ccc";
+      if (ownerError) throw ownerError;
+
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("name, phone, city")
+        .eq("id", owner.user_id)
+        .single();
+
+      if (userError) throw userError;
+
+      setPhotographer({
+        ...owner,
+        ...user,
+        rate: owner.rate || 0,
+        rating_count: owner.rating_count || 0,
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load photographer details.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    const { data, error } = await supabase
+      .from("comments")
+      .select(`
+        comment_id,
+        description,
+        created_at,
+        users ( name )
+      `)
+      .eq("owner_id", ownerId)
+      .order("created_at", { ascending: false });
+
+    if (!error) setComments(data || []);
+    setLoadingComments(false);
+  };
+
+  const checkReservation = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("reservations")
+      .select("reservations_id")
+      .eq("user_id", userId)
+      .eq("owner_id", ownerId)
+      .eq("status", "accepted")
+      .limit(1);
+
+    setCanRate(data && data.length > 0);
+
+    
+  };
+
+  /* ================= RATING ================= */
 
   const handleRating = async (rating) => {
     if (!userId) {
-      alert("You must be logged in to rate this photographer.");
+      alert("You must be logged in.");
       return;
     }
 
-    setUserRating(rating);
+    if (!canRate) {
+      alert("Rating allowed only for users who booked.");
+      return;
+    }
 
-    try {
-      const newRate = ((photographer.rate * photographer.rating_count + rating) / (photographer.rating_count + 1)).toFixed(1);
-      const newCount = photographer.rating_count + 1;
+    const newCount = photographer.rating_count + 1;
+    const newRate =
+      (photographer.rate * photographer.rating_count + rating) / newCount;
 
-      const { error } = await supabase
-        .from("owners")
-        .update({ rate: newRate, rating_count: newCount })
-        .eq("owner_id", photographer.owner_id);
+    const { error } = await supabase
+      .from("owners")
+      .update({
+        rate: newRate.toFixed(1),
+        rating_count: newCount,
+      })
+      .eq("owner_id", ownerId);
 
-      if (error) throw error;
-
-      setPhotographer(prev => ({
+    if (!error) {
+      setPhotographer((prev) => ({
         ...prev,
-        rate: parseFloat(newRate),
-        rating_count: newCount
+        rate: newRate,
+        rating_count: newCount,
       }));
+      setCanRate(false);
+      alert("Thanks for rating ⭐");
+    }
+    
+  };
 
-      alert("Thank you for your rating!");
-    } catch (err) {
-      console.error("Failed to submit rating:", err);
-      alert("Failed to submit rating.");
+  /* ================= COMMENTS ================= */
+
+  const handleAddComment = async () => {
+    if (!userId) {
+      alert("Login required.");
+      return;
+    }
+
+   
+
+    if (!newComment.trim()) return;
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        user_id: userId,
+        owner_id: ownerId,
+        description: newComment,
+      })
+      .select(`
+        comment_id,
+        description,
+        created_at,
+        users ( name )
+      `)
+      .single();
+
+    if (!error) {
+      setComments((prev) => [data, ...prev]);
+      setNewComment("");
     }
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h1>{photographer.name}</h1>
-      <p><strong>Phone:</strong> {photographer.phone}</p>
-      <p><strong>City:</strong> {photographer.city}</p>
-      <p><strong>Description:</strong> {photographer.description}</p>
+  /* ================= UI ================= */
 
-      {/* تقييم النجوم */}
-      <div style={{ display: "flex", alignItems: "center", margin: "10px 0" }}>
-        {[1,2,3,4,5].map(star => (
-          <span
-            key={star}
-            style={{
-              fontSize: "2rem",
-              cursor: userId ? "pointer" : "not-allowed", // يظهر للغير مسجل كـ غير قابل للنقر
-              color: getStarColor(star),
-              marginRight: "5px"
-            }}
-            onMouseEnter={() => userId && setHoverRating(star)}
-            onMouseLeave={() => userId && setHoverRating(0)}
-            onClick={() => handleRating(star)}
-            title={userId ? `Rate ${star} stars` : "Log in to rate"}
-          >
-            ★
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+
+  return (
+    <div className="photographer-details-container">
+      <div className="card">
+        <h1>{photographer.name}</h1>
+        <p>📞 {photographer.phone}</p>
+        <p>📍 {photographer.city}</p>
+        <p>{photographer.description}</p>
+
+        {/* ⭐ Rating */}
+        <div className="rating-section">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span
+              key={star}
+              style={{
+                color:
+                  hoverRating >= star || photographer.rate >= star
+                    ? "#FFD700"
+                    : "#ccc",
+                cursor: canRate ? "pointer" : "not-allowed",
+              }}
+              onMouseEnter={() => canRate && setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={() => canRate && handleRating(star)}
+            >
+              ★
+            </span>
+          ))}
+          <span>
+            {photographer.rate.toFixed(1)} ({photographer.rating_count})
           </span>
-        ))}
-        <span style={{ marginLeft: "10px", fontSize: "1rem", color: "#555" }}>
-          {photographer.rate.toFixed(1)} ({photographer.rating_count} reviews)
-        </span>
+        </div>
+
+        {!canRate && userId && (
+          <p className="warning-msg">
+            Rating & comments only for booked users.
+          </p>
+        )}
       </div>
 
-      <p><strong>User ID:</strong> {photographer.user_id}</p>
-      <p><strong>Owner ID:</strong> {photographer.owner_id}</p>
+      {/* 💬 COMMENTS */}
+      <div className="comments-section">
+        <h3>Comments</h3>
+
+     {userId && (
+  <div className="add-comment">
+    <textarea
+      placeholder={
+        canRate
+          ? "Write your comment..."
+          : "Only users  can comment"
+      }
+    
+      value={newComment}
+      onChange={(e) => setNewComment(e.target.value)}
+    />
+
+    <button
+      onClick={handleAddComment}
+      
+    >
+      Post Comment
+    </button>
+  </div>
+)}
+
+
+        {loadingComments ? (
+          <p>Loading comments...</p>
+        ) : comments.length === 0 ? (
+          <p>No comments yet.</p>
+        ) : (
+          comments.map((c) => (
+            <div key={c.comment_id} className="comment-card">
+              <strong>{c.users?.name}</strong>
+              <span>
+                {new Date(c.created_at).toLocaleDateString()}
+              </span>
+              <p>{c.description}</p>
+            </div>
+          ))
+        )}
+      </div>
+      {/* 📦 Packages Section */}
+<div className="packages-section">
+  <h3>Available Packages</h3>
+
+  {loadingPackages ? (
+    <p>Loading packages...</p>
+  ) : packages.length === 0 ? (
+    <p className="no-packages">No packages available.</p>
+  ) : (
+    <div className="packages-grid">
+      {packages.map((pkg) => (
+        <div key={pkg.id} className="package-card">
+          <img
+            src={pkg.imgurl}
+            alt={pkg.packagename}
+            className="package-img"
+          />
+
+          <h4>{pkg.packagename}</h4>
+
+          <p className="price">💰 {pkg.price} ₪</p>
+
+          <ul>
+            <li>📸 Photos: {pkg.numberofphoto}</li>
+            <li>🎥 Videos: {pkg.numberofvidio}</li>
+            <li>✨ Edited Photos: {pkg.numberofeditedphoto}</li>
+          </ul>
+        </div>
+      ))}
     </div>
+  )}
+</div>
+
+    </div>
+
+    
   );
 }
