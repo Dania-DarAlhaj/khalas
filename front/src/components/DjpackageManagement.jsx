@@ -1,398 +1,262 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "../style/DjpackageManagement.css";
 
 export default function DjpackageManagement() {
-  const navigate = useNavigate();
-
-  const ownerId = sessionStorage.getItem("ownerId_");
+  const userId = Number(sessionStorage.getItem("userId_"));
   const [djPackages, setDjPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [searchName, setSearchName] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
-  const [searchName, setSearchName] = useState("");
-  const [searchPrice, setSearchPrice] = useState("");
-  const filteredPackages = djPackages
-    .filter((dj) =>
-      dj?.packagename?.toLowerCase().includes(searchName.toLowerCase())
-    )
-    .filter((dj) => searchPrice === "" || dj?.price <= Number(searchPrice));
 
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [newPackage, setNewPackage] = useState({
     packagename: "",
     price: "",
     hours: "",
     describtion: "",
-    numberofphoto: "",
-    numberofeditedphoto: "",
-    imgurl: "",
   });
 
   useEffect(() => {
-    const getDjPackages = async () => {
-      const { data, error } = await supabase
+    const fetchDjPackages = async () => {
+      const { data: ownerData, error: ownerError } = await supabase
+        .from("owners")
+        .select("owner_id, user_id")
+        .eq("user_id", userId)
+        .single();
+
+      if (ownerError || !ownerData) {
+        console.error("Owner not found", ownerError);
+        setLoading(false);
+        return;
+      }
+
+      const ownerId = ownerData.owner_id;
+
+      const { data: djData, error: djError } = await supabase
         .from("dj")
         .select("*")
         .eq("owner_id", ownerId);
 
-      if (error) {
-        console.error("Error fetching DJ packages:", error);
+      if (djError) {
+        console.error("DJ packages error", djError);
+        setLoading(false);
         return;
       }
 
-      setDjPackages(data);
+      setDjPackages(djData || []);
+      setLoading(false);
     };
 
-    if (ownerId) {
-      getDjPackages();
-    }
-  }, [ownerId]);
+    if (userId) fetchDjPackages();
+  }, [userId]);
 
-  const handleAddPackage = async () => {
-    if (!ownerId) return; // Ensure ownerId exists
-    const { error } = await supabase
-      .from("dj")
-      .insert([newPackage]);
+  if (loading) return <p>Loading...</p>;
 
-    if (error) {
-      console.error("Error adding package:", error);
-      return;
-    }
+  const filteredPackages = djPackages.filter((dj) => {
+    const matchesName = dj.packagename
+      .toLowerCase()
+      .includes(searchName.toLowerCase());
+    const matchesPrice = maxPrice ? dj.price <= Number(maxPrice) : true;
+    return matchesName && matchesPrice;
+  });
 
-    setDjPackages([...djPackages, newPackage]);
-    setNewPackage({
-      packagename: "",
-      price: "",
-      hours: "",
-      describtion: "",
-      numberofphoto: "",
-      numberofeditedphoto: "",
-      imgurl: "",
-    });
-    setShowAddModal(false);
-  };
-
-  const handleCancelAdd = () => {
-    setShowAddModal(false);
-  };
-
-  // Delete
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this package?"
-    );
-
-    if (!confirmDelete) return;
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
 
     const { error } = await supabase.from("dj").delete().eq("id", id);
-
-    if (error) {
-      alert("Failed to delete package");
-      console.error(error);
-      return;
-    }
+    if (error) return alert("Failed to delete package: " + error.message);
 
     setDjPackages(djPackages.filter((dj) => dj.id !== id));
   };
 
-  // Start editing
-  const handleEdit = (dj) => {
+  const handleEditClick = (dj) => {
     setEditingId(dj.id);
-    setEditData({ ...dj });
-  };
-
-  // Cancel edit
-  const handleCancel = () => {
-    setEditingId(null);
-    setEditData({});
-  };
-
-  // Save edit
-  const handleSave = async (id) => {
-    const { error } = await supabase
-      .from("dj")
-      .update({
-        packagename: editData.packagename,
-        price: editData.price,
-        hours: editData.hours,
-        describtion: editData.describtion,
-        numberofphoto: editData.numberofphoto,
-        numberofeditedphoto: editData.numberofeditedphoto,
-      })
-      .eq("id", id);
-
-    if (error) {
-      alert("Failed to update package");
-      console.error(error);
-      return;
-    }
-
-    setDjPackages(
-      djPackages.map((dj) => (dj.id === id ? { ...editData } : dj))
-    );
-
-    setEditingId(null);
-    setEditData({});
-  };
-
-  // Input change in table
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditData({ ...editData, [name]: value });
-  };
-  // لتحديث state الفورم الجديد مباشرة عند أي تغيير
-  const handleAddInputChange = (e) => {
-    const { name, value } = e.target; // ناخد اسم الحقل والقيمة المدخلة
-    setNewPackage({
-      ...newPackage, // نحتفظ بالقيم السابقة
-      [name]: value, // نحدث الحقل الحالي بالقيمة الجديدة
+    setEditData({
+      packagename: dj.packagename,
+      price: dj.price,
+      hours: dj.hours,
+      describtion: dj.describtion,
     });
   };
 
+  const handleSave = async (id) => {
+    const { error } = await supabase.from("dj").update(editData).eq("id", id);
+    if (error) return alert("Failed to update package: " + error.message);
+
+    setDjPackages(djPackages.map((item) =>
+      item.id === id ? { ...item, ...editData } : item
+    ));
+    setEditingId(null);
+  };
+
+  const handleCancel = () => setEditingId(null);
+
+  // Add Package functions
+  const handleAddPackage = async () => {
+    if (!newPackage.packagename || !newPackage.price) {
+      return alert("Package name and price are required!");
+    }
+
+    // جلب owner_id
+    const { data: ownerData } = await supabase
+      .from("owners")
+      .select("owner_id")
+      .eq("user_id", userId)
+      .single();
+
+    const ownerId = ownerData.owner_id;
+
+    const { data, error } = await supabase
+      .from("dj")
+      .insert([{ ...newPackage, price: Number(newPackage.price), hours: Number(newPackage.hours), owner_id: ownerId }])
+      .select();
+
+    if (error) return alert("Failed to add package: " + error.message);
+
+    setDjPackages([...djPackages, data[0]]);
+    setNewPackage({ packagename: "", price: "", hours: "", describtion: "" });
+    setShowModal(false);
+  };
+
   return (
-    <div>
-      {/* NAVBAR */}
-      <nav className="nav">
-        <h3 className="logo">Wedding Planner</h3>
-
-        <div className="links">
-          <button onClick={() => navigate("/DJowner")} className="btn">
-            Home
-          </button>
-
-          <button className="btn">Profile</button>
-
-          <button
-            onClick={() => navigate("/DjpackageManagement")}
-            className="btn"
-          >
-            Package Management
-          </button>
+    <div className="container">
+      {/* Navbar */}
+      <nav className="navbar navbar-expand-lg">
+        <div className="container-fluid">
+          <a className="navbar-brand" href="#">🎧 DJ Management</a>
+          <div className="collapse navbar-collapse">
+            <ul className="navbar-nav ms-auto">
+              <li className="nav-item">
+                <button className="btn btn-success" onClick={() => setShowModal(true)}>Add Package</button>
+              </li>
+            </ul>
+          </div>
         </div>
       </nav>
 
-      <div className="content">
-        <h2>🎧 DJ Packages</h2>
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search by package name"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
+      <h2>🎧 My DJ Packages</h2>
 
-          <input
-            type="number"
-            placeholder="Max price"
-            value={searchPrice}
-            onChange={(e) => setSearchPrice(e.target.value)}
-          />
-          <button onClick={() => setShowAddModal(true)}>
-            ➕ Add Existing Package
-          </button>
-        </div>
+      <div className="mb-3 mt-3">
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          className="form-control"
+        />
+        <input
+          type="number"
+          placeholder="Max price"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+          className="form-control mt-2"
+        />
+      </div>
 
-        {djPackages.length === 0 ? (
-          <p className="empty">😶 No packages found</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Hours</th>
-                <th>Description</th>
-                <th>#Photos</th>
-                <th>#Edited</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPackages.map((dj) => (
-                <tr key={dj.id}>
-                  <td>
-                    <img
-                      src={`/img/dj/${dj.imgurl}`}
-                      alt={dj.packagename}
-                      className="dj-img"
-                    />
-                  </td>
+      {/* جدول الباكجات */}
+      <table className="table table-bordered">
+        <thead className="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Package Name</th>
+            <th>Price</th>
+            <th>Hours</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredPackages.map((dj) => (
+            <tr key={dj.id}>
+              <td>{dj.id}</td>
+              <td>
+                {editingId === dj.id ? (
+                  <input type="text" className="form-control" value={editData.packagename}
+                    onChange={(e) => setEditData({ ...editData, packagename: e.target.value })} />
+                ) : dj.packagename}
+              </td>
+              <td>
+                {editingId === dj.id ? (
+                  <input type="number" className="form-control" value={editData.price}
+                    onChange={(e) => setEditData({ ...editData, price: Number(e.target.value) })} />
+                ) : dj.price}
+              </td>
+              <td>
+                {editingId === dj.id ? (
+                  <input type="number" className="form-control" value={editData.hours}
+                    onChange={(e) => setEditData({ ...editData, hours: Number(e.target.value) })} />
+                ) : dj.hours}
+              </td>
+              <td>
+                {editingId === dj.id ? (
+                  <input type="text" className="form-control" value={editData.describtion}
+                    onChange={(e) => setEditData({ ...editData, describtion: e.target.value })} />
+                ) : dj.describtion}
+              </td>
+              <td>
+                {editingId === dj.id ? (
+                  <>
+                    <button className="btn btn-success btn-sm me-1" onClick={() => handleSave(dj.id)}>Save</button>
+                    <button className="btn btn-secondary btn-sm" onClick={handleCancel}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-primary btn-sm me-1" onClick={() => handleEditClick(dj)}>Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(dj.id)}>Delete</button>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-                  {/* Inline Edit */}
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="text"
-                        name="packagename"
-                        value={editData.packagename}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.packagename
-                    )}
-                  </td>
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="number"
-                        name="price"
-                        value={editData.price}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.price
-                    )}
-                  </td>
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="number"
-                        name="hours"
-                        value={editData.hours}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.hours
-                    )}
-                  </td>
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="text"
-                        name="describtion"
-                        value={editData.describtion}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.describtion
-                    )}
-                  </td>
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="number"
-                        name="numberofphoto"
-                        value={editData.numberofphoto}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.numberofphoto
-                    )}
-                  </td>
-                  <td>
-                    {editingId === dj.id ? (
-                      <input
-                        type="number"
-                        name="numberofeditedphoto"
-                        value={editData.numberofeditedphoto}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      dj.numberofeditedphoto
-                    )}
-                  </td>
-
-                  <td className="actions">
-                    {editingId === dj.id ? (
-                      <>
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleSave(dj.id)}
-                        >
-                          💾 Save
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={handleCancel}
-                        >
-                          ❌ Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleEdit(dj)}
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDelete(dj.id)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {showAddModal && (
-          <div className="modal">
-            <h3>Add New Package</h3>
-
+      {/* Modal Add Package */}
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content-custom">
+            <h3>Add New DJ Package</h3>
             <input
               type="text"
-              name="packagename"
               placeholder="Package Name"
+              className="form-control mb-2"
               value={newPackage.packagename}
-              onChange={handleAddInputChange}
+              onChange={(e) => setNewPackage({ ...newPackage, packagename: e.target.value })}
             />
             <input
               type="number"
-              name="price"
               placeholder="Price"
+              className="form-control mb-2"
               value={newPackage.price}
-              onChange={handleAddInputChange}
+              onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
             />
             <input
               type="number"
-              name="hours"
               placeholder="Hours"
+              className="form-control mb-2"
               value={newPackage.hours}
-              onChange={handleAddInputChange}
+              onChange={(e) => setNewPackage({ ...newPackage, hours: e.target.value })}
             />
             <input
               type="text"
-              name="describtion"
               placeholder="Description"
+              className="form-control mb-3"
               value={newPackage.describtion}
-              onChange={handleAddInputChange}
+              onChange={(e) => setNewPackage({ ...newPackage, describtion: e.target.value })}
             />
-            <input
-              type="number"
-              name="numberofphoto"
-              placeholder="#Photos"
-              value={newPackage.numberofphoto}
-              onChange={handleAddInputChange}
-            />
-            <input
-              type="number"
-              name="numberofeditedphoto"
-              placeholder="#Edited"
-              value={newPackage.numberofeditedphoto}
-              onChange={handleAddInputChange}
-            />
-            <input
-              type="text"
-              name="imgurl"
-              placeholder="Image filename"
-              value={newPackage.imgurl}
-              onChange={handleAddInputChange}
-            />
-
-            <div className="modal-actions">
-              <button onClick={handleAddPackage}>Add</button>
-              <button onClick={handleCancelAdd}>Cancel</button>
+            <div className="text-end">
+              <button className="btn btn-success me-2" onClick={handleAddPackage}>Add</button>
+              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

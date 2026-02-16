@@ -102,134 +102,145 @@ export default function PhotographersPageOwnerhome() {
   }, [userId, ownerId]);
 
   return (
-    <div>
-      {/* NAVBAR */}
+    <div className="photographer-owner-page">
+      {/* NAVBAR (EXACTLY like Hall page) */}
       <nav className="owner-navbar">
-        <button onClick={() => navigate("")}>Profile</button>
-        <button onClick={() => navigate("/PackageManagementPhoto")}>Package Management</button>
-        <button onClick={() => navigate("/VisitRequestsPhoto")}>Visit Requests</button>
-        <button onClick={() => navigate("/BookingRequestsphoto")}>Booking Requests</button>
-        <button onClick={() => navigate("/AddPackagephoto")}>Add Package</button>
-        <button onClick={handleLogout}>Logout</button>
+        <div className="navbar-left">
+          <div className="navbar-logo">
+            <span className="logo-text">Wedding Planning System</span>
+          </div>
+        </div>
+        
+        <div className="navbar-right">
+          <button onClick={() => navigate("/PhotographersPageOwnerhome")}>👤 Profile</button>
+          <button onClick={() => navigate("/PackageManagementPhoto")}>📦 Package Management</button>
+          <button onClick={() => navigate("/VisitRequestsPhoto")}>📋 Visit Requests</button>
+          <button onClick={() => navigate("/BookingRequestsphoto")}>📅 Booking Requests</button>
+          <button onClick={() => navigate("/AddPackagephoto")}>➕ Add Package</button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
       </nav>
 
       {/* PROFILE CONTENT */}
-      <div style={{ padding: "20px" }}>
-        <div className="profile-container">
-          <h2 className="profile-title">Profile Information</h2>
-          {loading ? (
-            <p>Loading profile...</p>
-          ) : (
-            <>
-              {/* User Info */}
-              <div className="profile-section">
-                <h3>User Information</h3>
+      <div className="profile-container">
+        <h2 className="profile-title">Photographer Profile</h2>
+        
+        {loading ? (
+          <p className="loading-text">Loading profile...</p>
+        ) : (
+          <>
+            {/* User Info */}
+            <div className="profile-section">
+              <h3>Personal Information</h3>
 
-                <div className="profile-field">
-                  <label>Email</label>
-                  <span>{userData?.email}</span>
-                </div>
-
-                <div className="profile-field">
-                  <label>Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{userData?.name}</span>
-                  )}
-                </div>
-
-                <div className="profile-field">
-                  <label>Phone</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{userData?.phone}</span>
-                  )}
-                </div>
-
-                <div className="profile-field">
-                  <label>City</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{userData?.city}</span>
-                  )}
-                </div>
+              <div className="profile-field">
+                <label>Email</label>
+                <span>{userData?.email}</span>
               </div>
 
-              {/* Owner Info */}
-              <div className="profile-section">
-                <h3>Owner Information</h3>
-
-                <div className="profile-field">
-                  <label>Rate</label>
-                  <span>⭐ {ownerData?.rate || "No ratings yet"}</span>
-                </div>
-
-                <div className="profile-field">
-                  <label>Rating Count</label>
-                  <span>{ownerData?.rating_count}</span>
-                </div>
-
-                <div className="profile-field">
-                  <label>Description</label>
-                  {isEditing ? (
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span className="description">
-                      {ownerData?.description || "No description"}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Edit / Save Buttons */}
-              <div style={{ marginTop: "15px" }}>
+              <div className="profile-field">
+                <label>Name</label>
                 {isEditing ? (
-                  <>
-                    <button onClick={handleSave}>Save</button>
-                    <button
-                      onClick={() => {
-                        setFormData({
-                          name: userData.name,
-                          phone: userData.phone,
-                          city: userData.city,
-                          description: ownerData.description,
-                        });
-                        setIsEditing(false);
-                      }}
-                      style={{ marginLeft: "8px" }}
-                    >
-                      Cancel
-                    </button>
-                  </>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter your name"
+                  />
                 ) : (
-                  <button onClick={() => setIsEditing(true)}>Edit Profile</button>
+                  <span>{userData?.name}</span>
                 )}
               </div>
-            </>
-          )}
-        </div>
+
+              <div className="profile-field">
+                <label>Phone</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="Enter your phone number"
+                  />
+                ) : (
+                  <span>{userData?.phone}</span>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>City</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder="Enter your city"
+                  />
+                ) : (
+                  <span>{userData?.city}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Owner Info */}
+            <div className="profile-section">
+              <h3>Business Information</h3>
+
+              <div className="profile-field">
+                <label>Rate</label>
+                <span>⭐ {ownerData?.rate || "No ratings yet"}</span>
+              </div>
+
+              <div className="profile-field">
+                <label>Rating Count</label>
+                <span>{ownerData?.rating_count}</span>
+              </div>
+
+              <div className="profile-field">
+                <label>Description</label>
+                {isEditing ? (
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Describe your photography services..."
+                  />
+                ) : (
+                  <span className="description">
+                    {ownerData?.description || "No description provided"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Edit / Save Buttons */}
+            <div className="action-buttons">
+              {isEditing ? (
+                <>
+                  <button onClick={handleSave} className="save-btn">Save Changes</button>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        name: userData.name,
+                        phone: userData.phone,
+                        city: userData.city,
+                        description: ownerData.description,
+                      });
+                      setIsEditing(false);
+                    }}
+                    className="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setIsEditing(true)} className="edit-btn">Edit Profile</button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

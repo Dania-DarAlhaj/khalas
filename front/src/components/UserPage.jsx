@@ -12,70 +12,42 @@ export default function UserPage() {
 const email = sessionStorage.getItem("pendingEmail");
 const password = sessionStorage.getItem("pendingPassword");
 
-  const cities = ["Ramallah", "Hebron", "Nablus", "Tulkarm", "Jericho"];
+  const cities = ["Ramallah", "Hebron", "Nablus", "Tulkarm", "Jericho", "Jenin", "Qalqilya", "Salfit", "Bethlehem", "Tubas"];
 const navigate = useNavigate();
-  // helper: hash password with random salt using Web Crypto (SHA-256)
-  async function hashPassword(plain) {
-    const enc = new TextEncoder();
-    const pwBuffer = enc.encode(plain);
-    const saltArray = window.crypto.getRandomValues(new Uint8Array(16));
-    // combine salt + password
-    const combined = new Uint8Array(saltArray.length + pwBuffer.length);
-    combined.set(saltArray);
-    combined.set(pwBuffer, saltArray.length);
-    const hashBuffer = await window.crypto.subtle.digest('SHA-256', combined.buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    const saltHex = Array.from(saltArray).map(b => b.toString(16).padStart(2, '0')).join('');
-    return { salt: saltHex, hash: hashHex };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const plainPassword = password || '';
+  if (!plainPassword) {
+    alert('No password available to store.');
+    return;
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // prefer freshly entered password if available, otherwise use pendingPassword
-    const plainPassword = password || '';
-    if (!plainPassword) {
-      alert('No password available to store.');
-      return;
-    }
-
-    setTimeout(()=>{},0);
-
-    // hash the password before saving
-    let salted;
-    try {
-      salted = await hashPassword(plainPassword);
-    } catch (err) {
-      console.error('Hashing error', err);
-      alert('Failed to process password.');
-      return;
-    }
-
-    const userData = {
-      email,
-      password_hash: salted.hash,
-      password_salt: salted.salt,
-      role: "user",
-      name,
-      phone,
-      city,
-      verified: false,
-    };
-
-    const { data, error } = await supabase
-      .from("users")
-      .insert([userData]);
-
-    if (error) {
-      console.error("Error:", error);
-      alert("Error saving user: " + error.message);
-    } else {
-      console.log("User saved:", data);
-      alert("User saved successfully!");
-      navigate("/");
-    }
+  const userData = {
+    email,
+    password: plainPassword, 
+    role: "user",
+    name : name,
+    phone: phone,
+    city: city,
+    verified: true,
   };
+
+  const { data, error } = await supabase
+    .from("users")
+    .insert([userData]);
+
+  if (error) {
+    console.error("Error:", error);
+    alert("Error saving user: " + error.message);
+  } else {
+    console.log("User saved:", data);
+    alert("User saved successfully!");
+    navigate("/");
+  }
+};
+
 
   return (
     <div className="user-container">

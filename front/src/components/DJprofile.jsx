@@ -39,9 +39,22 @@ export default function VisitFormHall() {
             Profile
           </button>
 
+ <button  style={styles.btn}>
+            Add package
+          </button>
+
           <button onClick={() => navigate("/DjpackageManagement")} style={styles.btn}>
             Package Management
           </button>
+
+           <button onClick={() => navigate("/Djcommingreservations")} style={styles.btn}>
+          comming reservations
+          </button>
+ <button onClick={() => navigate("/DjAddcReservations")} style={styles.btn}>
+            AddcReservations 
+          </button>
+          
+
         </div>
       </nav>
 

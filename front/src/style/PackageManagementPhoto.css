@@ -199,79 +199,84 @@ body::before {
   box-shadow: 0 10px 35px rgba(212,175,55,0.5) !important;
 }
 
-/* ========== PAGE CONTENT ========== */
-.profile-container {
-  max-width: 1100px;
-  margin: 100px auto 2.5rem;
-  padding: 0 1rem;
+/* ========== MAIN CONTAINER ========== */
+.package-container {
+  max-width: 1300px;
+  margin: 120px auto 3rem;
+  padding: 0 1.5rem;
   position: relative;
   z-index: 1;
   animation: fadeInUp 0.7s ease-out;
 }
 
-.profile-title {
+/* ========== PAGE TITLE ========== */
+.package-container > h2 {
   font-family: 'Playfair Display', serif;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
   background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 50%, var(--gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   position: relative;
-  padding-bottom: 1rem;
+  padding-bottom: 1.2rem;
   letter-spacing: 0.5px;
 }
 
-.profile-title::after {
+.package-container > h2::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
+  width: 120px;
   height: 4px;
   background: linear-gradient(90deg, var(--gold), var(--primary), var(--rose-gold));
   border-radius: 3px;
   box-shadow: 0 4px 15px rgba(212,175,55,0.4);
 }
 
-.profile-title::before {
-  content: '✦';
+.package-container > h2::before {
+  content: '📸';
   position: absolute;
   left: 50%;
-  top: -25px;
+  top: -35px;
   transform: translateX(-50%);
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   color: var(--gold);
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
-/* ========== PROFILE SECTIONS ========== */
-.profile-section {
+/* ========== SEARCH BAR ========== */
+.search-container {
   background: linear-gradient(145deg, #ffffff 0%, #fefefe 100%);
-  border-radius: 24px;
-  padding: 2.5rem;
+  border-radius: 20px;
+  padding: 2rem;
   box-shadow: 
     0 8px 30px rgba(0,0,0,0.06),
     0 2px 8px rgba(0,0,0,0.04),
     inset 0 1px 0 rgba(255,255,255,0.8);
   border: 1px solid rgba(212,175,55,0.15);
   margin-bottom: 2.5rem;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   position: relative;
   overflow: hidden;
 }
 
-.profile-section::before {
+.search-container::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(90deg, var(--gold), var(--primary), var(--rose-gold), var(--gold));
+  background: linear-gradient(90deg, var(--rose-gold), var(--gold), var(--primary), var(--rose-gold));
   background-size: 200% 100%;
   animation: shimmer 3s linear infinite;
 }
@@ -281,123 +286,20 @@ body::before {
   100% { background-position: 200% 0; }
 }
 
-.profile-section:hover {
-  box-shadow: 
-    0 15px 45px rgba(0,0,0,0.08),
-    0 4px 12px rgba(0,0,0,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.9);
-  transform: translateY(-5px);
-}
-
-.profile-section h3 {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--dark);
-  margin-bottom: 2rem;
-  text-align: center;
-  position: relative;
-  padding-bottom: 1rem;
-}
-
-.profile-section h3::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--gold), var(--primary));
-  border-radius: 2px;
-}
-
-/* ========== PROFILE FIELDS ========== */
-.profile-field {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 1.5rem;
-  align-items: center;
-  margin-bottom: 1.8rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(139,115,85,0.1);
-  animation: fadeInUp 0.5s ease-out backwards;
-}
-
-.profile-field:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.profile-field label {
-  font-weight: 600;
-  color: var(--dark);
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.profile-field label::before {
-  font-size: 1.1rem;
-  min-width: 1.1rem;
-}
-
-/* Icons for each field */
-.profile-field:nth-child(1) label::before { content: '📧'; } /* Email */
-.profile-field:nth-child(2) label::before { content: '👤'; } /* Name */
-.profile-field:nth-child(3) label::before { content: '📱'; } /* Phone */
-.profile-field:nth-child(4) label::before { content: '🏙️'; } /* City */
-.profile-field:nth-child(5) label::before { content: '⭐'; } /* Rate */
-.profile-field:nth-child(6) label::before { content: '📊'; } /* Rating Count */
-.profile-field:nth-child(7) label::before { content: '📝'; } /* Description */
-
-.profile-field span,
-.profile-field input,
-.profile-field textarea {
+.search-container input {
+  padding: 0.9rem 1.4rem;
+  border: 2px solid rgba(212,175,55,0.25);
+  border-radius: 12px;
   font-size: 1rem;
-  color: var(--dark);
   font-family: 'Lato', sans-serif;
-}
-
-.profile-field span {
-  padding: 0.8rem 1rem;
-  background: linear-gradient(145deg, #f8f8f8 0%, #f0f0f0 100%);
-  border-radius: 12px;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
-}
-
-.profile-field span:hover {
-  background: linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%);
-  border-color: rgba(212,175,55,0.2);
-}
-
-.description {
-  line-height: 1.6;
-  display: block;
-  min-height: 60px;
-}
-
-/* ========== FORM INPUTS ========== */
-.profile-field input,
-.profile-field textarea {
-  width: 100%;
-  padding: 0.85rem 1.2rem;
-  border: 2px solid rgba(139,115,85,0.15);
-  border-radius: 12px;
-  font-size: 0.95rem;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
   color: var(--dark);
+  background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 250px;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.profile-field input:focus,
-.profile-field textarea:focus {
+.search-container input:focus {
   border-color: var(--gold);
   box-shadow: 
     0 0 0 4px rgba(212,175,55,0.12),
@@ -407,147 +309,214 @@ body::before {
   transform: translateY(-2px);
 }
 
-.profile-field textarea {
-  min-height: 100px;
-  resize: vertical;
-  font-family: 'Lato', sans-serif;
-  line-height: 1.5;
+.search-container input::placeholder {
+  color: rgba(139,115,85,0.6);
 }
 
-/* ========== ACTION BUTTONS ========== */
-.action-buttons {
-  text-align: center;
-  margin-top: 2rem;
-}
-
-.edit-btn,
-.save-btn,
-.cancel-btn {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-  border: none;
-  color: white;
-  border-radius: 50px;
-  padding: 1rem 2.8rem;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+/* ========== PACKAGES TABLE ========== */
+.package-table-container {
+  background: linear-gradient(145deg, #ffffff 0%, #fefefe 100%);
+  border-radius: 24px;
+  padding: 2.5rem;
   box-shadow: 
-    0 6px 20px rgba(212,175,55,0.35),
-    0 2px 8px rgba(0,0,0,0.1);
+    0 8px 30px rgba(0,0,0,0.06),
+    0 2px 8px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  border: 1px solid rgba(183,110,121,0.15);
+  overflow: hidden;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.package-table-container:hover {
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,0.08),
+    0 4px 12px rgba(0,0,0,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  transform: translateY(-5px);
+}
+
+.package-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.95rem;
+}
+
+.package-table thead {
+  background: linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(183,110,121,0.1) 100%);
+}
+
+.package-table th {
+  padding: 1.2rem 1rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 0.9rem;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.8px;
+  border-bottom: 2px solid rgba(212,175,55,0.3);
+}
+
+.package-table td {
+  padding: 1.2rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(139,115,85,0.1);
+  vertical-align: middle;
+}
+
+.package-table tbody tr:hover {
+  background: linear-gradient(135deg, rgba(212,175,55,0.05) 0%, rgba(183,110,121,0.05) 100%);
+}
+
+.package-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ========== TABLE INPUTS ========== */
+.package-table input[type="text"],
+.package-table input[type="number"] {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid rgba(212,175,55,0.2);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: 'Lato', sans-serif;
+  color: var(--dark);
+  background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+  transition: all 0.3s ease;
+  text-align: center;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.package-table input[type="text"]:focus,
+.package-table input[type="number"]:focus {
+  border-color: var(--rose-gold);
+  box-shadow: 
+    0 0 0 3px rgba(183,110,121,0.15),
+    inset 0 2px 4px rgba(0,0,0,0.02);
+  outline: none;
+  background: white;
+}
+
+/* ========== PACKAGE IMAGE ========== */
+.package-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 3px solid rgba(212,175,55,0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.package-img:hover {
+  transform: scale(1.15) rotate(2deg);
+  border-color: var(--gold);
+  box-shadow: 0 8px 25px rgba(212,175,55,0.25);
+}
+
+/* ========== ACTION BUTTONS - FIXED INLINE ========== */
+.package-table td.actions-cell {
+  white-space: nowrap;
+  min-width: 180px;
+}
+
+/* هذا هو الحل - الأزرار تظهر في سطر واحد */
+.package-table td.actions-cell button {
+  display: inline-block !important;
+  margin: 0 4px !important;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   position: relative;
   overflow: hidden;
-  margin: 0 0.5rem;
+  min-width: 70px;
+  vertical-align: middle;
 }
 
-.edit-btn::before,
-.save-btn::before,
-.cancel-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s ease, height 0.6s ease;
+/* إزالة أي تأثير قد يسبب التقسيم */
+.package-table td.actions-cell > div,
+.package-table td.actions-cell > span {
+  display: inline !important;
 }
 
-.edit-btn:hover::before,
-.save-btn:hover::before,
-.cancel-btn:hover::before {
-  width: 300%;
-  height: 300%;
+/* التأكد من أن الأزرار متجاورة */
+.package-table td.actions-cell {
+  text-align: center;
 }
 
-.edit-btn:hover,
-.save-btn:hover,
-.cancel-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 
-    0 10px 35px rgba(212,175,55,0.45),
-    0 4px 12px rgba(0,0,0,0.15);
+/* ألوان الأزرار */
+.package-table .edit-btn {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(212,175,55,0.3);
 }
 
-.edit-btn:active,
-.save-btn:active,
-.cancel-btn:active {
-  transform: translateY(-1px);
+.package-table .delete-btn {
+  background: linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(211,47,47,0.3);
 }
 
-.save-btn {
+.package-table .save-btn {
   background: linear-gradient(135deg, #1F7A34 0%, #2E8B57 100%);
-  box-shadow: 
-    0 6px 20px rgba(31,122,52,0.35),
-    0 2px 8px rgba(0,0,0,0.1);
+  color: white;
+  box-shadow: 0 4px 15px rgba(31,122,52,0.3);
 }
 
-.save-btn:hover {
-  box-shadow: 
-    0 10px 35px rgba(31,122,52,0.45),
-    0 4px 12px rgba(0,0,0,0.15);
-}
-
-.cancel-btn {
+.package-table .cancel-btn {
   background: linear-gradient(135deg, #666 0%, #888 100%);
-  box-shadow: 
-    0 6px 20px rgba(102,102,102,0.35),
-    0 2px 8px rgba(0,0,0,0.1);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102,102,102,0.3);
 }
 
-.cancel-btn:hover {
-  box-shadow: 
-    0 10px 35px rgba(102,102,102,0.45),
-    0 4px 12px rgba(0,0,0,0.15);
+/* تأثيرات التحويم */
+.package-table button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
-/* ========== LOADING STATE ========== */
-.loading-text {
+/* ========== MESSAGES ========== */
+.package-container > p {
   text-align: center;
   font-size: 1.1rem;
   color: var(--primary);
-  margin-top: 100px;
   font-weight: 600;
   font-family: 'Playfair Display', serif;
+  padding: 2rem;
+  background: linear-gradient(145deg, #ffffff 0%, #fefefe 100%);
+  border-radius: 20px;
+  margin-top: 2rem;
+  border: 1px solid rgba(212,175,55,0.15);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
 }
-
-/* ========== ANIMATIONS ========== */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.profile-field:nth-child(1) { animation-delay: 0.05s; }
-.profile-field:nth-child(2) { animation-delay: 0.1s; }
-.profile-field:nth-child(3) { animation-delay: 0.15s; }
-.profile-field:nth-child(4) { animation-delay: 0.2s; }
-.profile-field:nth-child(5) { animation-delay: 0.25s; }
-.profile-field:nth-child(6) { animation-delay: 0.3s; }
-.profile-field:nth-child(7) { animation-delay: 0.35s; }
 
 /* ========== RESPONSIVE DESIGN ========== */
+@media (max-width: 1200px) {
+  .package-container {
+    max-width: 95%;
+    margin-top: 110px;
+  }
+  
+  .package-table {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 1024px) {
   .owner-navbar {
     padding: 1rem 1.5rem;
   }
-
-  .profile-container {
-    max-width: 95%;
-  }
   
-  .profile-title {
-    font-size: 1.8rem;
-    margin-top: 90px;
+  .package-container > h2 {
+    font-size: 1.9rem;
   }
 }
 
@@ -573,56 +542,37 @@ body::before {
     padding: 0.55rem 1.1rem;
   }
 
-  .profile-title {
-    font-size: 1.6rem;
+  .package-container {
     margin-top: 180px;
+    padding: 0 1rem;
   }
-
-  .profile-section {
-    padding: 1.8rem;
-    border-radius: 20px;
+  
+  .package-container > h2 {
+    font-size: 1.7rem;
   }
-
-  .profile-field {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+  
+  .package-table-container {
+    padding: 1.5rem;
+    overflow-x: auto;
   }
-
-  .edit-btn,
-  .save-btn,
-  .cancel-btn {
-    width: 90%;
-    padding: 0.9rem 2rem;
-    font-size: 0.95rem;
-    margin: 0.5rem 0;
+  
+  .package-table {
+    min-width: 900px;
   }
 }
 
 @media (max-width: 480px) {
-  .navbar-left {
-    flex-direction: column;
-    width: 100%;
-  }
-
   .owner-navbar button {
     width: 100%;
+    max-width: 250px;
   }
-
-  .profile-title {
-    font-size: 1.4rem;
+  
+  .package-container {
     margin-top: 220px;
   }
-
-  .profile-section {
-    padding: 1.5rem;
-  }
-
-  .edit-btn,
-  .save-btn,
-  .cancel-btn {
-    padding: 0.85rem 1.8rem;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
+  
+  .package-container > h2 {
+    font-size: 1.5rem;
   }
 }
 
@@ -637,17 +587,17 @@ body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, var(--rose-gold) 0%, var(--gold) 100%);
   border-radius: 8px;
   border: 2px solid var(--light);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--gold) 100%);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--rose-gold) 100%);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--gold) var(--light);
+  scrollbar-color: var(--rose-gold) var(--light);
 }

@@ -321,14 +321,7 @@ export default function PhotographyPage() {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                 >
                   <div className="photographer-card">
-                    <div className="photographer-image-wrapper">
-                      <img
-                        src={photographer.image}
-                        alt={photographer.name}
-                        className="photographer-image"
-                        onError={(e) => { e.target.onerror = null; e.target.src = '/img/DJ/djj1.jpg'; }}
-                      />
-                    </div>
+                  
 
                     <div className="photographer-content">
                       <div className="photographer-header">

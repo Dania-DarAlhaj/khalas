@@ -155,7 +155,7 @@ const handleVisitSubmit = async (e) => {
             users:user_id (city)
           )
         `)
-        .eq("owner_id", userId)
+        .eq("hall_id", userId)
         .single();
 
       if (!error) setHall(data);

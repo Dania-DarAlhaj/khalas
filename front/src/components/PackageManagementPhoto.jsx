@@ -1,16 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { useEffect, useState } from "react";
+import "../style/PackageManagementPhoto.css";
 
 export default function PackageManagementPhoto() {
   const navigate = useNavigate();
   const userId = sessionStorage.getItem("userId_");
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null); // لتحديد الصف الجاري تعديله
+  const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
-const [searchName, setSearchName] = useState("");
-const [searchPrice, setSearchPrice] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchPrice, setSearchPrice] = useState("");
 
   const fetchPackages = async () => {
     try {
@@ -39,7 +40,7 @@ const [searchPrice, setSearchPrice] = useState("");
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذه الباقة؟")) return;
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
     try {
       const { error } = await supabase.from("photography").delete().eq("id", id);
       if (error) throw error;
@@ -85,154 +86,185 @@ const [searchPrice, setSearchPrice] = useState("");
     setEditValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  const filteredPackages = packages.filter((pkg) => {
+    const matchesName = pkg.packagename
+      .toLowerCase()
+      .includes(searchName.toLowerCase());
+    const matchesPrice = 
+      searchPrice === "" || 
+      pkg.price === Number(searchPrice) || 
+      pkg.price.toString().includes(searchPrice);
+    return matchesName && matchesPrice;
+  });
+
   return (
-    <div>
-      {/* Navbar */}
+    <div className="package-management-page">
+      {/* Navbar - Exactly like Hall page */}
       <nav className="owner-navbar">
-        <button onClick={() => navigate("/PhotographersPageOwnerhome")}>Profile</button>
-        <button onClick={() => navigate("/PackageManagementPhoto")}>Package Management</button>
-        <button onClick={() => navigate("/VisitRequestsPhoto")}>Visit Requests</button>
-        <button onClick={() => navigate("/BookingRequestsphoto")}>Booking Requests</button>
-        <button onClick={() => navigate("/AddPackagephoto")}>Add Package</button>
-        <button onClick={handleLogout}>Logout</button>
+        <div className="navbar-left">
+          <div className="navbar-logo">
+            <span className="logo-text">Wedding Planning System</span>
+          </div>
+        </div>
+        
+        <div className="navbar-right">
+          <button onClick={() => navigate("/PhotographersPageOwnerhome")}>👤 Profile</button>
+          <button onClick={() => navigate("/PackageManagementPhoto")}>📦 Package Management</button>
+          <button onClick={() => navigate("/VisitRequestsPhoto")}>📋 Visit Requests</button>
+          <button onClick={() => navigate("/BookingRequestsphoto")}>📅 Booking Requests</button>
+          <button onClick={() => navigate("/AddPackagephoto")}>➕ Add Package</button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
       </nav>
 
-      {/* Packages Table */}
+      {/* Main Content */}
       <div className="package-container">
-        <div style={{ marginBottom: "10px" }}>
-  <input
-    type="text"
-    placeholder="Search by Package Name..."
-    value={searchName}
-    onChange={(e) => setSearchName(e.target.value)}
-    style={{ marginRight: "10px", padding: "5px" }}
-  />
-  <input
-    type="number"
-    placeholder="Search by Price..."
-    value={searchPrice}
-    onChange={(e) => setSearchPrice(e.target.value)}
-    style={{ padding: "5px" }}
-  />
-</div>
-
         <h2>My Photography Packages 📸</h2>
+        
+        {/* Search Bar */}
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search by Package Name..."
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+          <input
+            type="number"
+            placeholder="Search by Price..."
+            value={searchPrice}
+            onChange={(e) => setSearchPrice(e.target.value)}
+          />
+        </div>
+
+        {/* Packages Table */}
         {loading ? (
           <p>Loading packages...</p>
-        ) : packages.length === 0 ? (
+        ) : filteredPackages.length === 0 ? (
           <p>No packages found.</p>
         ) : (
-          <table className="package-table">
-            <thead>
-              <tr>
-                <th>Package Name</th>
-                <th>Price</th>
-                <th>Number of Photos</th>
-                <th>Number of Videos</th>
-                <th>Number of Edited Photos</th>
-                <th>Image</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {packages.filter((pkg) => {
-    return (
-      pkg.packagename.toLowerCase().includes(searchName.toLowerCase()) &&
-      (searchPrice === "" || pkg.price === Number(searchPrice))
-    );
-  }).map((pkg) => (
-                <tr key={pkg.id}>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <input
-                        type="text"
-                        name="packagename"
-                        value={editValues.packagename}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      pkg.packagename
-                    )}
-                  </td>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <input
-                        type="number"
-                        name="price"
-                        value={editValues.price}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      `$${pkg.price}`
-                    )}
-                  </td>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <input
-                        type="number"
-                        name="numberofphoto"
-                        value={editValues.numberofphoto}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      pkg.numberofphoto
-                    )}
-                  </td>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <input
-                        type="number"
-                        name="numberofvidio"
-                        value={editValues.numberofvidio}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      pkg.numberofvidio
-                    )}
-                  </td>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <input
-                        type="number"
-                        name="numberofeditedphoto"
-                        value={editValues.numberofeditedphoto}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      pkg.numberofeditedphoto
-                    )}
-                  </td>
-                  <td>
-                    {pkg.imgurl ? (
-                      <img
-                        src={pkg.imgurl}
-                        alt={pkg.packagename}
-                        className="package-img"
-                      />
-                    ) : (
-                      "No image"
-                    )}
-                  </td>
-                  <td>
-                    {editingId === pkg.id ? (
-                      <>
-                        <button onClick={() => handleSave(pkg.id)}>Save</button>
-                        <button onClick={handleCancel}>Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => handleEdit(pkg)}>Edit</button>
-                        <button onClick={() => handleDelete(pkg.id)}>Delete</button>
-                      </>
-                    )}
-                  </td>
+          <div className="package-table-container">
+            <table className="package-table">
+              <thead>
+                <tr>
+                  <th>Package Name</th>
+                  <th>Price ($)</th>
+                  <th># Photos</th>
+                  <th># Videos</th>
+                  <th># Edited Photos</th>
+               
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredPackages.map((pkg) => (
+                  <tr key={pkg.id}>
+                    <td>
+                      {editingId === pkg.id ? (
+                        <input
+                          type="text"
+                          name="packagename"
+                          value={editValues.packagename}
+                          onChange={handleChange}
+                          placeholder="Package Name"
+                        />
+                      ) : (
+                        pkg.packagename
+                      )}
+                    </td>
+                    <td>
+                      {editingId === pkg.id ? (
+                        <input
+                          type="number"
+                          name="price"
+                          value={editValues.price}
+                          onChange={handleChange}
+                          placeholder="Price"
+                        />
+                      ) : (
+                        `$${pkg.price}`
+                      )}
+                    </td>
+                    <td>
+                      {editingId === pkg.id ? (
+                        <input
+                          type="number"
+                          name="numberofphoto"
+                          value={editValues.numberofphoto}
+                          onChange={handleChange}
+                          placeholder="Number of Photos"
+                        />
+                      ) : (
+                        pkg.numberofphoto
+                      )}
+                    </td>
+                    <td>
+                      {editingId === pkg.id ? (
+                        <input
+                          type="number"
+                          name="numberofvidio"
+                          value={editValues.numberofvidio}
+                          onChange={handleChange}
+                          placeholder="Number of Videos"
+                        />
+                      ) : (
+                        pkg.numberofvidio
+                      )}
+                    </td>
+                    <td>
+                      {editingId === pkg.id ? (
+                        <input
+                          type="number"
+                          name="numberofeditedphoto"
+                          value={editValues.numberofeditedphoto}
+                          onChange={handleChange}
+                          placeholder="Edited Photos"
+                        />
+                      ) : (
+                        pkg.numberofeditedphoto
+                      )}
+                    </td>
+                  
+                    <td className="actions-cell">
+                      {editingId === pkg.id ? (
+                        <>
+                          <button 
+                            onClick={() => handleSave(pkg.id)} 
+                            className="save-btn"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            onClick={handleCancel} 
+                            className="cancel-btn"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleEdit(pkg)} 
+                            className="edit-btn"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(pkg.id)} 
+                            className="delete-btn"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
-      
     </div>
   );
 }
