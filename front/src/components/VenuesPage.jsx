@@ -5,12 +5,8 @@ import '../style/VenuesPage.css';
 import { supabase } from '../supabaseClient';
 import Chatbot from './chatbot';
 
-
 import { useNavigate, Link } from "react-router-dom";
-
 export default function VenuesPage() {
-
-  /* ================= STATES ================= */
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,8 +24,6 @@ export default function VenuesPage() {
     navigate("/login");
   };
  
-
-
 useEffect(() => {
   const fetchVenues = async () => {
     setLoading(true);
@@ -57,8 +51,6 @@ useEffect(() => {
 
   fetchVenues();
 }, []);
-
-
 
 const fetchFilteredVenues = async (filters) => {
   try {
@@ -94,15 +86,8 @@ const fetchFilteredVenues = async (filters) => {
     return [];
   }
 };
-
-
-
-
-
  const navigate = useNavigate();
-  /* ================= FILTERS ================= */
   const locations = ['all', 'Ramallah', 'Nablus', 'Bethlehem', 'Hebron', "Jerusalem", "Jenin", "Tulkarm", "Qalqilya", "Salfit", "Tubas", "Jericho"];
-
   const priceRanges = [
     { value: 'all', label: 'All Prices' },
     { value: 'low', label: 'Under 7,000 ₪' },
@@ -144,9 +129,6 @@ const fetchFilteredVenues = async (filters) => {
 
     return matchSearch && matchLocation && matchPrice && matchCapacity;
   });
-
-
-
   /* ================= FONT & NAVBAR SCROLL ================= */
   useEffect(() => {
     setIsLoggedIn(!!sessionStorage.getItem("currentEmail"));
@@ -170,8 +152,6 @@ const fetchFilteredVenues = async (filters) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  /* ================= UI ================= */
   return (
     <div>
 
@@ -202,11 +182,9 @@ const fetchFilteredVenues = async (filters) => {
             </motion.div>
             <span className="brand-primary">Wedding Planning System</span>
           </Link>
-
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span className="navbar-toggler-icon"></span>
           </button>
-
           <div className="collapse navbar-collapse" id="navMenu">
             <ul className="navbar-nav ms-auto align-items-lg-center">
               <li className="nav-item"><Link className="nav-link" to="/">Home</Link></li>
@@ -252,7 +230,6 @@ const fetchFilteredVenues = async (filters) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-
           {/* FILTERS */}
           <div className="row mt-4">
             <div className="col-md-4">
@@ -261,13 +238,11 @@ const fetchFilteredVenues = async (filters) => {
                 {locations.slice(1).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
-
             <div className="col-md-4">
               <select className="filter-select" value={selectedPrice} onChange={e => setSelectedPrice(e.target.value)}>
                 {priceRanges.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
-
             <div className="col-md-4">
               <select className="filter-select" value={selectedCapacity} onChange={e => setSelectedCapacity(e.target.value)}>
                 {capacityRanges.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -334,7 +309,7 @@ const fetchFilteredVenues = async (filters) => {
 
             <button
               className="btn btn-primary"
-              onClick={() => navigate(`/venue/${v.owner_id}`)}
+              onClick={() => navigate(`/VenueDetails/${v.owner_id}`)}
             >
               see more
             </button>
@@ -344,7 +319,6 @@ const fetchFilteredVenues = async (filters) => {
     ))}
   </div>
 )}
-
         </div>
       </div>
 
@@ -410,8 +384,6 @@ const fetchFilteredVenues = async (filters) => {
     {chatOpen ? '✕' : '💬'}
   </button>
 </div>
-
-    
     </div>
   );
 }

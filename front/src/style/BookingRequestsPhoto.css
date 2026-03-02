@@ -340,13 +340,26 @@ body::before {
 }
 
 /* ========== TABLE ========== */
-.booking-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-family: 'Lato', sans-serif;
-  font-size: 0.95rem;
-  table-layout: fixed;
+/* ====== TABLE ====== */
+.booking-table th,
+.booking-table td {
+  padding: 0.6rem 0.8rem; /* أصغر */
+  font-size: 0.8rem; /* أصغر شوية */
+}
+
+.booking-table th {
+  text-align: center;
+}
+
+.booking-table td {
+  text-align: center;
+}
+
+/* ====== PAGE HEADER ====== */
+.booking-container > h2 {
+  font-size: 1.5rem; /* أصغر */
+  margin-bottom: 1rem; /* أقل مسافة تحت العنوان */
+  padding-bottom: 0.5rem; /* أقل padding */
 }
 
 /* Table Header */

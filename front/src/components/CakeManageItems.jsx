@@ -5,7 +5,7 @@ import '../style/CakeManageItems.css';
 
 export default function CakeManageItems() {
   const navigate = useNavigate();
-  const userId = sessionStorage.getItem("userId_"); 
+  const userId = sessionStorage.getItem("ownerId_"); 
   const [cakes, setCakes] = useState([]);
   const [filteredCakes, setFilteredCakes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,6 +19,7 @@ export default function CakeManageItems() {
     navigate("/login");
   };
 
+  // Fetch cakes for this user
   const fetchCakes = async () => {
     if (!userId) return;
     setLoading(true);
@@ -41,7 +42,7 @@ export default function CakeManageItems() {
     fetchCakes();
   }, [userId]);
 
-  // update filtered cakes when search text changes
+  // Filter cakes when search changes
   useEffect(() => {
     const filtered = cakes.filter(cake =>
       cake.name.toLowerCase().includes(searchText.toLowerCase())
@@ -49,32 +50,45 @@ export default function CakeManageItems() {
     setFilteredCakes(filtered);
   }, [searchText, cakes]);
 
-  // add new cake
-  const handleAddItem = async (e) => {
+  // Add new cake
+  const handleAddCake = async (e) => {
     e.preventDefault();
-    if (!fileName || !cakeName) return alert("Please fill all fields!");
-    if (!userId) return alert("User not logged in!");
 
-    setAdding(true);
+
     try {
-      const { error } = await supabase.from("cakes").insert([
-        {
-          user_id: userId,
-          imgurl: fileName,
-          name: cakeName
-        },
-      ]);
+      setAdding(true);
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("cakes")
+        .insert([
+          {
+            user_id: userId,
+             imgurl: fileName ,
+            name: cakeName
+            // store only the filename
+          }
+        ]);
 
-      setFileName("");
+      if (error) {
+        console.error("Insert error:", error);
+        return alert(error.message || JSON.stringify(error));
+      }
+
+      // Reset form
       setCakeName("");
-      fetchCakes(); 
+      setFileName("");
+
+      // Refresh cakes list
+      fetchCakes();
+
+      alert("Cake added successfully!");
+
     } finally {
       setAdding(false);
     }
   };
 
+  // Delete cake
   const handleDelete = async (cakeId) => {
     if (!window.confirm("Are you sure you want to delete this cake?")) return;
 
@@ -114,7 +128,7 @@ export default function CakeManageItems() {
         {/* === ADD NEW CAKE FORM === */}
         <div className="form-section">
           <h2 className="section-header">➕ Add New Cake</h2>
-          <form className="add-form" onSubmit={handleAddItem}>
+          <form className="add-form" onSubmit={handleAddCake}>
             <div className="form-group">
               <label>Cake Name</label>
               <input

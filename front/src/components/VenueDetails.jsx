@@ -9,7 +9,6 @@ import "../style/VenueDetails.css";
 import "../style/VenuesPage.css";
 
 export default function VenueDetails() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { userId } = useParams();
   const [commentsList, setCommentsList] = useState([]);
   const [hall, setHall] = useState(null);
@@ -314,41 +313,54 @@ const handleVisitSubmit = async (e) => {
     fetchBookedDates();
   }, [hall]);
 
-  const handleBooking = async (e) => {
-    e.preventDefault();
+ const handleBooking = async (e) => {
+  e.preventDefault();
 
-    if (!bookingDate) {
-      setMessage("⚠️ Please select a booking date");
-      return;
-    }
+  if (!bookingDate) {
+    setMessage("⚠️ Please select a booking date");
+    return;
+  }
 
-    if (!userIdDb) {
-      setMessage("⚠️ User not found");
-      return;
-    }
+  // تحقق إذا كان التاريخ محجوز بالفعل
+  const isBooked = bookedDates.some(
+    (d) =>
+      d.getFullYear() === bookingDate.getFullYear() &&
+      d.getMonth() === bookingDate.getMonth() &&
+      d.getDate() === bookingDate.getDate()
+  );
 
-    const { error } = await supabase
-      .from("reservations")
-      .insert([
-        {
-          user_id: userIdDb,
-          owner_id: userId,
-          reservation_date: bookingDate.toISOString().split("T")[0],
-          price: hall.price,
-          status: true,
-          describtion: `Booking for ${hall.hall_type}`
-        }
-      ]);
+  if (isBooked) {
+    setMessage("⚠️ This date is already booked. Please choose another date.");
+    return;
+  }
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage("✅ Reservation saved successfully!");
-      setBookingDate(null);
-      setBookedDates([...bookedDates, new Date(bookingDate)]);
-      setShowBookingForm(false);
-    }
-  };
+  if (!userIdDb) {
+    setMessage("⚠️ User not found");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("reservations")
+    .insert([
+      {
+        user_id: userIdDb,
+        owner_id: userId,
+        reservation_date: bookingDate.toISOString().split("T")[0],
+        price: hall.price,
+        status: true,
+        describtion: `Booking for ${hall.hall_type}`
+      }
+    ]);
+
+  if (error) {
+    setMessage(error.message);
+  } else {
+    setMessage("✅ Reservation saved successfully!");
+    setBookingDate(null);
+    setBookedDates([...bookedDates, new Date(bookingDate)]);
+    setShowBookingForm(false);
+  }
+};
 
   const tileClassName = ({ date, view }) => {
     if (view === "month") {

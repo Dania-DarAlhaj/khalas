@@ -193,42 +193,53 @@ export default function PhotographerDetails() {
     setSelectedPackage(pkg);
     setShowReservationForm(true);
   };
+const handleReservationSubmit = async () => {
+  if (!selectedPackage || !reservationData.reservation_date) {
+    alert("Please fill all required fields.");
+    return;
+  }
 
-  const handleReservationSubmit = async () => {
-    if (!selectedPackage || !reservationData.reservation_date || !reservationData.reservation_time) {
-      alert("Please fill all required fields.");
-      return;
-    }
+  try {
+    // 1️⃣ إضافة الحجز في جدول reservations
+    const { data: reservationDataRes, error: reservationError } = await supabase
+      .from("reservations")
+      .insert([{
+        user_id: userId,
+        owner_id: ownerId,
+        reservation_date: reservationData.reservation_date,
+        price: selectedPackage.price,
+        status: false,  // أو "PENDING" حسب الـ schema عندك
+        describtion: reservationData.notes
+      }])
+      .select() // نحتاج الـ reservations_id الناتج
+      .single();
 
-    try {
-      const { error } = await supabase
-        .from("reservations")
-        .insert({
-          user_id: userId,
-          owner_id: ownerId,
-          package_id: selectedPackage.id,
-          reservation_date: reservationData.reservation_date,
-          reservation_time: reservationData.reservation_time,
-          notes: reservationData.notes,
-          status: "PENDING"
-        });
+    if (reservationError) throw reservationError;
 
-      if (error) throw error;
+    const reservationId = reservationDataRes.reservations_id;
 
-      alert("Reservation request sent successfully! The photographer will review your request.");
-      setShowReservationForm(false);
-      setSelectedPackage(null);
-      setReservationData({
-        reservation_date: "",
-        reservation_time: "",
-        notes: ""
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to make reservation.");
-    }
-  };
+    // 2️⃣ إضافة الرابط في جدول package_reservation
+    const { error: packageResError } = await supabase
+      .from("package_reservation")
+      .insert([{
+        reservations_id: reservationId,
+        photography_id: selectedPackage.id
+      }]);
 
+    if (packageResError) throw packageResError;
+
+    alert("Reservation request sent successfully! The photographer will review your request.");
+    setShowReservationForm(false);
+    setSelectedPackage(null);
+    setReservationData({
+      reservation_date: "",
+      notes: ""
+    });
+  } catch (err) {
+    console.error("Reservation error:", err);
+    alert("Failed to make reservation. Please try again.");
+  }
+};
   /* ================= UI ================= */
   if (loading) return (
     <div className="loading-container">
@@ -466,18 +477,7 @@ export default function PhotographerDetails() {
                   />
                 </div>
                 
-                <div className="form-group">
-                  <label>Reservation Time *</label>
-                  <input
-                    type="time"
-                    value={reservationData.reservation_time}
-                    onChange={(e) => setReservationData({
-                      ...reservationData,
-                      reservation_time: e.target.value
-                    })}
-                    className="form-input"
-                  />
-                </div>
+            
                 
                 <div className="form-group">
                   <label>Additional Notes (Optional)</label>

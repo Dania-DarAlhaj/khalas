@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import '../style/AdminPage.css';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../supabaseClient';
 
 export default function AdminPage() {
   const [admin, setAdmin] = useState({
@@ -12,94 +14,723 @@ export default function AdminPage() {
   });
 
   const [stats, setStats] = useState({
-    totalVenues: 12,
-    totalCustomers: 156,
-    pendingApprovals: 8,
-    totalRevenue: 125000,
-    activeBookings: 24,
-    totalServiceProviders: 45,
-    pendingPayments: 15000
+    totalVenues: 0,
+    totalCustomers: 0,
+    pendingApprovals: 0,
+    totalRevenue: 0,
+    activeBookings: 0,
+    totalServiceProviders: 0,
+    pendingPayments: 0
   });
 
-  const [customers, setCustomers] = useState([
-    { id: 1, name: 'Ahmad Khalil', email: 'ahmad.k@email.com', phone: '+970-59-111-2222', bookings: 1, totalSpent: 5000, joinDate: '2024-02-01', status: 'Active' },
-    { id: 2, name: 'Layla Salem', email: 'layla.s@email.com', phone: '+970-59-222-3333', bookings: 2, totalSpent: 8500, joinDate: '2024-01-15', status: 'Active' },
-    { id: 3, name: 'Omar Taha', email: 'omar.t@email.com', phone: '+970-59-333-4444', bookings: 1, totalSpent: 6200, joinDate: '2024-03-10', status: 'Active' },
-    { id: 4, name: 'Noor Mahmoud', email: 'noor.m@email.com', phone: '+970-59-444-5555', bookings: 0, totalSpent: 0, joinDate: '2024-03-20', status: 'Inactive' }
-  ]);
-
-  const [serviceProviders, setServiceProviders] = useState([
-    { id: 1, name: 'Elite Catering', type: 'Catering', email: 'info@elitecatering.com', phone: '+970-59-555-6666', status: 'Active', rating: 4.8 },
-    { id: 2, name: 'Perfect Photos', type: 'Photography', email: 'contact@perfectphotos.com', phone: '+970-59-666-7777', status: 'Active', rating: 4.9 },
-    { id: 3, name: 'Floral Dreams', type: 'Flowers', email: 'hello@floraldreams.com', phone: '+970-59-777-8888', status: 'Pending', rating: 4.7 },
-    { id: 4, name: 'Sound Masters', type: 'Music/DJ', email: 'info@soundmasters.com', phone: '+970-59-888-9999', status: 'Active', rating: 4.6 }
-  ]);
-
-  const [payments, setPayments] = useState([
-    { id: 1, booking: 101, customer: 'Ahmad Khalil', amount: 2500, commission: 375, netAmount: 2125, date: '2024-03-01', status: 'Completed', method: 'Credit Card' },
-    { id: 2, booking: 102, customer: 'Layla Salem', amount: 1800, commission: 270, netAmount: 1530, date: '2024-03-05', status: 'Pending', method: 'Bank Transfer' },
-    { id: 3, booking: 103, customer: 'Omar Taha', amount: 3500, commission: 525, netAmount: 2975, date: '2024-03-08', status: 'Completed', method: 'Cash' },
-    { id: 4, booking: 104, customer: 'Noor Mahmoud', amount: 2000, commission: 300, netAmount: 1700, date: '2024-03-10', status: 'Refunded', method: 'Credit Card' }
-  ]);
-
-  const [activityLog, setActivityLog] = useState([
-    { id: 1, user: 'Admin', action: 'Approved service provider: Floral Dreams', timestamp: '2024-03-15 10:30 AM', type: 'approval' },
-    { id: 2, user: 'Ahmad Khalil', action: 'Created new booking #101', timestamp: '2024-03-15 09:15 AM', type: 'booking' },
-    { id: 3, user: 'Admin', action: 'Processed payment #1', timestamp: '2024-03-13 02:30 PM', type: 'payment' },
-    { id: 4, user: 'Admin', action: 'Suspended customer: Noor Mahmoud', timestamp: '2024-03-12 04:15 PM', type: 'suspension' },
-    { id: 5, user: 'Omar Taha', action: 'Left review for Crystal Events', timestamp: '2024-03-12 01:30 PM', type: 'review' }
-  ]);
-
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'New service provider registration: Floral Dreams', time: '1h', type: 'order' },
-    { id: 2, text: 'Payment received for booking #101 - 2500 ILS', time: '2h', type: 'success' },
-    { id: 3, text: 'System backup completed successfully', time: '1d', type: 'info' }
-  ]);
+  const [customers, setCustomers] = useState([]);
+  const [serviceProviders, setServiceProviders] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [serviceDetails, setServiceDetails] = useState(null);
 
   const messagesEndRef = useRef(null);
 
-  const approveServiceProvider = (id) => {
-    setServiceProviders(prev => prev.map(s => s.id === id ? { ...s, status: 'Active' } : s));
-    setNotifications(prev => [{ id: Date.now(), text: `Service provider approved: ${serviceProviders.find(s => s.id === id)?.name}`, time: 'now', type: 'success' }, ...prev]);
-    setStats(prev => ({ ...prev, pendingApprovals: Math.max(0, prev.pendingApprovals - 1) }));
-    setActivityLog(prev => [{ id: Date.now(), user: 'Admin', action: `Approved service provider: ${serviceProviders.find(s => s.id === id)?.name}`, timestamp: new Date().toLocaleString(), type: 'approval' }, ...prev]);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // دالة لجلب تفاصيل الخدمة بناءً على نوعها
+  const fetchServiceDetails = async (ownerId, ownerType) => {
+    try {
+      let serviceData = null;
+      
+      switch (ownerType) {
+        case 'hall':
+          const { data: hallData } = await supabase
+            .from('halls')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = hallData;
+          break;
+          
+        case 'cake':
+          const { data: cakeData } = await supabase
+            .from('cakes')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = cakeData;
+          break;
+          
+        case 'decoration':
+          const { data: decorData } = await supabase
+            .from('decoration')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = decorData;
+          break;
+          
+        case 'photographer':
+          const { data: photoData } = await supabase
+            .from('photographers')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = photoData;
+          break;
+          
+        case 'music':
+          const { data: musicData } = await supabase
+            .from('musics')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = musicData;
+          break;
+          
+        case 'car':
+          const { data: carData } = await supabase
+            .from('cars')
+            .select('*')
+            .eq('owner_id', ownerId)
+            .single();
+          serviceData = carData;
+          break;
+          
+        default:
+          serviceData = null;
+      }
+      
+      return serviceData;
+    } catch (error) {
+      console.error('Error fetching service details:', error);
+      return null;
+    }
   };
 
-  const suspendServiceProvider = (id) => {
-    setServiceProviders(prev => prev.map(s => s.id === id ? { ...s, status: 'Suspended' } : s));
-    setNotifications(prev => [{ id: Date.now(), text: `Service provider suspended: ${serviceProviders.find(s => s.id === id)?.name}`, time: 'now', type: 'warning' }, ...prev]);
-    setActivityLog(prev => [{ id: Date.now(), user: 'Admin', action: `Suspended service provider: ${serviceProviders.find(s => s.id === id)?.name}`, timestamp: new Date().toLocaleString(), type: 'suspension' }, ...prev]);
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch service providers (Owners)
+      const { data: ownersData, error: ownersError } = await supabase
+        .from('owners')
+        .select(`
+          owner_id,
+          owner_type,
+          visible,
+          accept,
+          description,
+          rate,
+          created_at,
+          users (
+            id,
+            name,
+            email,
+            phone,
+            city
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (ownersError) throw ownersError;
+
+      // جلب تفاصيل الخدمات لكل owner
+      const ownersWithServices = await Promise.all(
+        ownersData.map(async (owner) => {
+          const serviceDetails = await fetchServiceDetails(owner.owner_id, owner.owner_type);
+          
+          // Determine status based on visible and accept
+          let status;
+          if (owner.visible && owner.accept === true) {
+            status = 'Active';
+          } else if (!owner.visible && owner.accept === false) {
+            status = 'Rejected';
+          } else {
+            status = 'Pending'; // visible = false و accept = null
+          }
+
+          return {
+            id: owner.owner_id,
+            name: owner.users?.name || 'Unknown',
+            type: owner.owner_type || 'Not specified',
+            email: owner.users?.email || 'N/A',
+            phone: owner.users?.phone || 'N/A',
+            city: owner.users?.city || 'N/A',
+            status: status,
+            accept: owner.accept,
+            visible: owner.visible,
+            description: owner.description || '',
+            rate: owner.rate || 0,
+            created_at: owner.created_at,
+            user: owner.users, // بيانات اليوزر كاملة
+            service: serviceDetails // بيانات الخدمة
+          };
+        })
+      );
+
+      setServiceProviders(ownersWithServices);
+
+      // Fetch customers (Users)
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'user')
+        .order('created_at', { ascending: false });
+
+      if (usersError) throw usersError;
+
+      const formattedCustomers = usersData.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || 'N/A',
+        city: user.city || 'N/A',
+        joinDate: new Date(user.created_at).toLocaleDateString(),
+        status: user.verified ? 'Active' : 'Inactive',
+        verified: user.verified
+      }));
+
+      setCustomers(formattedCustomers);
+
+      // Fetch reservations and payments
+      const { data: reservationsData, error: reservationsError } = await supabase
+        .from('reservations')
+        .select(`
+          reservations_id,
+          price,
+          status,
+          describtion,
+          created_at,
+          users!reservations_user_id_fkey (
+            name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (reservationsError) throw reservationsError;
+
+      const formattedPayments = reservationsData.map(res => ({
+        id: res.reservations_id,
+        booking: res.reservations_id,
+        customer: res.users?.name || 'Unknown',
+        amount: res.price || 0,
+        commission: (res.price || 0) * 0.15,
+        netAmount: (res.price || 0) * 0.85,
+        date: new Date(res.created_at).toLocaleDateString(),
+        status: res.status ? 'Completed' : 'Pending',
+        method: 'Credit Card',
+        description: res.describtion || ''
+      }));
+
+      setPayments(formattedPayments);
+
+      // Update statistics
+      setStats({
+        totalVenues: ownersData.filter(o => o.owner_type === 'hall').length,
+        totalCustomers: usersData.length,
+        pendingApprovals: ownersData.filter(o => !o.visible && o.accept === null).length,
+        totalRevenue: formattedPayments.reduce((sum, p) => sum + p.amount, 0),
+        activeBookings: reservationsData.filter(r => r.status).length,
+        totalServiceProviders: ownersData.length,
+        pendingPayments: formattedPayments.filter(p => p.status === 'Pending').reduce((sum, p) => sum + p.amount, 0)
+      });
+
+      // Add notifications
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: 'Data updated successfully',
+        time: 'Just now',
+        type: 'success'
+      }, ...prev.slice(0, 4)]);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Error fetching data`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteServiceProvider = (id) => {
-    const provider = serviceProviders.find(s => s.id === id);
-    setServiceProviders(prev => prev.filter(s => s.id !== id));
-    setNotifications(prev => [{ id: Date.now(), text: `Service provider deleted: ${provider?.name}`, time: 'now', type: 'warning' }, ...prev]);
-    setActivityLog(prev => [{ id: Date.now(), user: 'Admin', action: `Deleted service provider: ${provider?.name}`, timestamp: new Date().toLocaleString(), type: 'deletion' }, ...prev]);
+  const updateServiceProviderStatus = async (id, newStatus) => {
+    try {
+      setIsLoading(true);
+      
+      const provider = serviceProviders.find(s => s.id === id);
+      
+      // Update visible and accept based on new status
+      let updates = {};
+      
+      if (newStatus === 'Active') {
+        updates = { visible: true, accept: true };
+      } else if (newStatus === 'Rejected') {
+        updates = { visible: false, accept: false };
+      } else if (newStatus === 'Pending') {
+        updates = { visible: false, accept: null };
+      }
+      
+      const { error } = await supabase
+        .from('owners')
+        .update(updates)
+        .eq('owner_id', id);
+
+      if (error) throw error;
+
+      // Update local data
+      setServiceProviders(prev => prev.map(s => 
+        s.id === id ? { 
+          ...s, 
+          status: newStatus,
+          accept: updates.accept,
+          visible: updates.visible
+        } : s
+      ));
+
+      // Update statistics
+      setStats(prev => ({
+        ...prev,
+        pendingApprovals: newStatus === 'Active' || newStatus === 'Rejected'
+          ? Math.max(0, prev.pendingApprovals - 1) 
+          : newStatus === 'Pending' 
+            ? prev.pendingApprovals + 1
+            : prev.pendingApprovals
+      }));
+
+      // Add notification
+      const actionText = 
+        newStatus === 'Active' ? 'activated' :
+        newStatus === 'Rejected' ? 'rejected' :
+        'set to pending';
+      
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `${actionText} service provider: ${provider?.name}`,
+        time: 'Just now',
+        type: newStatus === 'Active' ? 'success' : 'warning'
+      }, ...prev.slice(0, 4)]);
+
+    } catch (error) {
+      console.error('Error updating service provider:', error);
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Error updating service provider status`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const suspendCustomer = (id) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: 'Suspended' } : c));
-    setNotifications(prev => [{ id: Date.now(), text: `Customer suspended: ${customers.find(c => c.id === id)?.name}`, time: 'now', type: 'warning' }, ...prev]);
-    setActivityLog(prev => [{ id: Date.now(), user: 'Admin', action: `Suspended customer: ${customers.find(c => c.id === id)?.name}`, timestamp: new Date().toLocaleString(), type: 'suspension' }, ...prev]);
+  const deleteServiceProvider = async (id) => {
+    try {
+      setIsLoading(true);
+      const provider = serviceProviders.find(s => s.id === id);
+      
+      const { error } = await supabase
+        .from('owners')
+        .delete()
+        .eq('owner_id', id);
+
+      if (error) throw error;
+
+      setServiceProviders(prev => prev.filter(s => s.id !== id));
+      setStats(prev => ({
+        ...prev,
+        totalServiceProviders: prev.totalServiceProviders - 1,
+        pendingApprovals: provider.status === 'Pending' 
+          ? Math.max(0, prev.pendingApprovals - 1) 
+          : prev.pendingApprovals
+      }));
+      
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Deleted service provider: ${provider?.name}`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev.slice(0, 4)]);
+
+    } catch (error) {
+      console.error('Error deleting service provider:', error);
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Error deleting service provider`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const processPayment = (id) => {
-    setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'Completed' } : p));
-    setNotifications(prev => [{ id: Date.now(), text: `Payment #${id} processed successfully`, time: 'now', type: 'success' }, ...prev]);
-    setActivityLog(prev => [{ id: Date.now(), user: 'Admin', action: `Processed payment #${id}`, timestamp: new Date().toLocaleString(), type: 'payment' }, ...prev]);
+  const updateCustomerStatus = async (id, newStatus) => {
+    try {
+      setIsLoading(true);
+      const customer = customers.find(c => c.id === id);
+      const verified = newStatus === 'Active';
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ verified: verified })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCustomers(prev => prev.map(c => 
+        c.id === id ? { ...c, status: newStatus, verified: verified } : c
+      ));
+
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `${verified ? 'Activated' : 'Suspended'} customer: ${customer?.name}`,
+        time: 'Just now',
+        type: verified ? 'success' : 'warning'
+      }, ...prev.slice(0, 4)]);
+
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Error updating customer status`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const openModal = (type, item = null) => {
+  const updatePaymentStatus = async (id, newStatus) => {
+    try {
+      setIsLoading(true);
+      const status = newStatus === 'Completed';
+      
+      const { error } = await supabase
+        .from('reservations')
+        .update({ status: status })
+        .eq('reservations_id', id);
+
+      if (error) throw error;
+
+      setPayments(prev => prev.map(p => 
+        p.id === id ? { ...p, status: newStatus } : p
+      ));
+
+      // Update stats
+      const payment = payments.find(p => p.id === id);
+      if (payment) {
+        setStats(prev => ({
+          ...prev,
+          activeBookings: newStatus === 'Completed' 
+            ? prev.activeBookings + 1 
+            : Math.max(0, prev.activeBookings - 1),
+          pendingPayments: newStatus === 'Completed'
+            ? Math.max(0, prev.pendingPayments - payment.amount)
+            : prev.pendingPayments + payment.amount
+        }));
+      }
+
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `${newStatus === 'Completed' ? 'Completed' : 'Suspended'} payment #${id}`,
+        time: 'Just now',
+        type: newStatus === 'Completed' ? 'success' : 'warning'
+      }, ...prev.slice(0, 4)]);
+
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      setNotifications(prev => [{
+        id: Date.now(),
+        text: `Error updating payment status`,
+        time: 'Just now',
+        type: 'warning'
+      }, ...prev]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openModal = async (type, item = null) => {
     setModalType(type);
     setSelectedItem(item);
+    
+    // إذا كان نوع المودال viewProvider، نجلب تفاصيل الخدمة
+    if (type === 'viewProvider' && item) {
+      try {
+        setIsLoading(true);
+        const serviceData = await fetchServiceDetails(item.id, item.type);
+        setServiceDetails(serviceData);
+      } catch (error) {
+        console.error('Error fetching service details:', error);
+        setServiceDetails(null);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setServiceDetails(null);
+    }
+    
     setShowModal(true);
+  };
+
+  // دالة لعرض تفاصيل الخدمة حسب النوع
+  const renderServiceDetails = (service) => {
+    if (!service) return null;
+
+    const serviceType = selectedItem?.type;
+    
+    switch (serviceType) {
+      case 'hall':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>🏛️ Hall Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Hall Name:</span>
+                  <strong>{service.hall_name || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Address:</span>
+                  <span>{service.address || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Capacity:</span>
+                  <span>{service.capacity || 0} people</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Price Range:</span>
+                  <span>{service.price_range || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Features:</span>
+                  <span>{service.features || 'N/A'}</span>
+                </div>
+                {service.additional_info && (
+                  <div className="info-item">
+                    <span className="text-muted">Additional Info:</span>
+                    <span>{service.additional_info}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      case 'cake':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>🎂 Cake Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Cake Type:</span>
+                  <strong>{service.cake_type || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Flavors:</span>
+                  <span>{service.flavors || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Sizes:</span>
+                  <span>{service.sizes || 'N/A'}</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Price Range:</span>
+                  <span>{service.price_range || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Decoration Style:</span>
+                  <span>{service.decoration_style || 'N/A'}</span>
+                </div>
+                {service.special_notes && (
+                  <div className="info-item">
+                    <span className="text-muted">Special Notes:</span>
+                    <span>{service.special_notes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      case 'decoration':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>🎨 Decoration Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Decoration Style:</span>
+                  <strong>{service.decoration_style || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Theme:</span>
+                  <span>{service.theme || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Price Range:</span>
+                  <span>{service.price_range || 'N/A'}</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Services Included:</span>
+                  <span>{service.services_included || 'N/A'}</span>
+                </div>
+                {service.special_features && (
+                  <div className="info-item">
+                    <span className="text-muted">Special Features:</span>
+                    <span>{service.special_features}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      case 'photographer':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>📸 Photographer Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Studio Name:</span>
+                  <strong>{service.studio_name || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Specialization:</span>
+                  <span>{service.specialization || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Experience:</span>
+                  <span>{service.experience_years || 0} years</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Package Price:</span>
+                  <span>{service.package_price || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Equipment:</span>
+                  <span>{service.equipment || 'N/A'}</span>
+                </div>
+                {service.portfolio_link && (
+                  <div className="info-item">
+                    <span className="text-muted">Portfolio:</span>
+                    <a href={service.portfolio_link} target="_blank" rel="noopener noreferrer">
+                      View Portfolio
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      case 'music':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>🎵 Music Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Band Name:</span>
+                  <strong>{service.band_name || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Music Genre:</span>
+                  <span>{service.music_genre || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Price Range:</span>
+                  <span>{service.price_range || 'N/A'}</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Members:</span>
+                  <span>{service.members_count || 0} members</span>
+                </div>
+                {service.equipment_provided && (
+                  <div className="info-item">
+                    <span className="text-muted">Equipment:</span>
+                    <span>{service.equipment_provided}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      case 'car':
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>🚗 Car Details</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Car Model:</span>
+                  <strong>{service.car_model || 'N/A'}</strong>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Car Type:</span>
+                  <span>{service.car_type || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Year:</span>
+                  <span>{service.year || 'N/A'}</span>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="info-item">
+                  <span className="text-muted">Price per Hour:</span>
+                  <span>{service.price_per_hour || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="text-muted">Capacity:</span>
+                  <span>{service.capacity || 0} people</span>
+                </div>
+                {service.features && (
+                  <div className="info-item">
+                    <span className="text-muted">Features:</span>
+                    <span>{service.features}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
+      default:
+        return (
+          <>
+            <h6 className="mt-4 mb-3" style={{ color: 'var(--gold)' }}>📋 Service Details</h6>
+            <div className="p-3 bg-light rounded">
+              <pre style={{ fontSize: '12px', margin: 0 }}>
+                {JSON.stringify(service, null, 2)}
+              </pre>
+            </div>
+          </>
+        );
+    }
   };
 
   useEffect(() => {
@@ -107,603 +738,15 @@ export default function AdminPage() {
   }, [notifications]);
 
   useEffect(() => {
-    const css = `
-      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Lato:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
-      
-      :root {
-        --primary: #8B7355;
-        --gold: #D4AF37;
-        --rose-gold: #B76E79;
-        --light: #FAF8F5;
-        --dark: #2C2416;
-        --cream: #FFF9F0;
-        --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-        --shadow-md: 0 8px 30px rgba(0,0,0,0.08);
-        --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
-      }
-      
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      
-      body { 
-        background: linear-gradient(135deg, #FAF8F5 0%, #FFF9F0 100%);
-        font-family: 'Lato', sans-serif;
-        color: var(--dark);
-        overflow-x: hidden;
-      }
-      
-      .wps-navbar {
-        background: rgba(255,255,255,0.98) !important;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.06);
-        border-bottom: 1px solid rgba(212,175,55,0.1);
-        padding: 1rem 0;
-        position: fixed;
-        top: 0; 
-        left: 0; 
-        right: 0; 
-        z-index: 999;
-        transition: all 0.3s ease;
-      }
-      
-      .wps-navbar.navbar-scrolled {
-        padding: 0.6rem 0;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-      }
-      
-      .brand-primary { 
-        font-family: 'Playfair Display', serif; 
-        color: var(--dark); 
-        font-weight: 700; 
-        letter-spacing: 0.5px;
-        font-size: 1.3rem;
-      }
-      
-      .nav-link { 
-        color: #3D3427 !important; 
-        font-weight: 500; 
-        margin: 0 0.8rem;
-        position: relative;
-        transition: all 0.3s ease;
-      }
-      
-      .nav-link:hover {
-        color: var(--gold) !important;
-      }
-      
-      .nav-link.active::after {
-        content: '';
-        position: absolute;
-        bottom: -5px;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, var(--gold), var(--primary));
-      }
-      
-      .admin-hero { 
-        padding-top: 120px; 
-        padding-bottom: 2rem;
-        position: relative;
-      }
-      
-      .hero-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 300px;
-        background: linear-gradient(135deg, rgba(212,175,55,0.05) 0%, rgba(139,115,85,0.05) 100%);
-        z-index: -1;
-        border-radius: 0 0 50px 50px;
-      }
-      
-      .stats-card { 
-        border-radius: 20px; 
-        box-shadow: var(--shadow-md);
-        background: white;
-        padding: 1.8rem 1.5rem;
-        border: 1px solid rgba(212,175,55,0.1);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .stats-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--gold), var(--primary));
-        transform: scaleX(0);
-        transition: transform 0.4s ease;
-      }
-      
-      .stats-card:hover {
-        transform: translateY(-8px);
-        box-shadow: var(--shadow-lg);
-      }
-      
-      .stats-card:hover::before {
-        transform: scaleX(1);
-      }
-      
-      .stats-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        margin: 0 auto 1rem;
-        box-shadow: 0 8px 20px rgba(212,175,55,0.3);
-      }
-      
-      .stats-value {
-        font-family: 'Playfair Display', serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      
-      .profile-card { 
-        border-radius: 20px; 
-        background: white;
-        padding: 2rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid rgba(212,175,55,0.1);
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .profile-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 120px;
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        z-index: 0;
-      }
-      
-      .profile-avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--gold);
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        border: 4px solid white;
-      }
-      
-      .profile-content {
-        position: relative;
-        z-index: 1;
-        margin-top: 1rem;
-      }
-      
-      .section-card { 
-        background: white;
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid rgba(212,175,55,0.1);
-        transition: all 0.3s ease;
-        margin-bottom: 2rem;
-      }
-      
-      .section-card:hover {
-        box-shadow: var(--shadow-lg);
-      }
-      
-      .section-header {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--dark);
-        margin-bottom: 1.5rem;
-        position: relative;
-        padding-bottom: 0.8rem;
-      }
-      
-      .section-header::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, var(--gold), var(--primary));
-        border-radius: 2px;
-      }
-      
-      .status-pill { 
-        padding: 0.4rem 1rem;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        transition: all 0.3s ease;
-      }
-      
-      .status-pill::before {
-        content: '';
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-      }
-      
-      .status-pending { 
-        background: linear-gradient(135deg, #FFF4CE 0%, #FFE8A3 100%);
-        color: #8A6B00;
-        border: 1px solid rgba(138,107,0,0.2);
-      }
-      
-      .status-pending::before {
-        background: #8A6B00;
-      }
-      
-      .status-active { 
-        background: linear-gradient(135deg, #E8F7EE 0%, #D1F0DD 100%);
-        color: #1F7A34;
-        border: 1px solid rgba(31,122,52,0.2);
-      }
-      
-      .status-active::before {
-        background: #1F7A34;
-      }
-      
-      .status-suspended { 
-        background: linear-gradient(135deg, #FDECEA 0%, #FBD5D0 100%);
-        color: #8A1E10;
-        border: 1px solid rgba(138,30,16,0.2);
-      }
-      
-      .status-suspended::before {
-        background: #8A1E10;
-      }
-      
-      .status-inactive { 
-        background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
-        color: #666;
-        border: 1px solid rgba(102,102,102,0.2);
-      }
-      
-      .status-inactive::before {
-        background: #666;
-      }
-      
-      .status-completed, .status-resolved { 
-        background: linear-gradient(135deg, #E8F7EE 0%, #D1F0DD 100%);
-        color: #1F7A34;
-        border: 1px solid rgba(31,122,52,0.2);
-      }
-      
-      .status-completed::before, .status-resolved::before {
-        background: #1F7A34;
-      }
-      
-      .status-refunded { 
-        background: linear-gradient(135deg, #FDECEA 0%, #FBD5D0 100%);
-        color: #8A1E10;
-        border: 1px solid rgba(138,30,16,0.2);
-      }
-      
-      .status-refunded::before {
-        background: #8A1E10;
-      }
-      
-      .quick-action { 
-        border: 1px solid rgba(0,0,0,0.08);
-        padding: 1rem;
-        border-radius: 12px;
-        background: white;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        font-weight: 500;
-      }
-      
-      .quick-action:hover {
-        background: linear-gradient(135deg, var(--cream) 0%, white 100%);
-        border-color: var(--gold);
-        transform: translateX(5px);
-        box-shadow: var(--shadow-sm);
-      }
-      
-      .quick-action-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.2rem;
-      }
-      
-      .btn-primary-custom {
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        border: none;
-        color: white;
-        border-radius: 50px;
-        padding: 0.7rem 1.8rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(212,175,55,0.3);
-      }
-      
-      .btn-primary-custom:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(212,175,55,0.4);
-      }
-      
-      .btn-outline-custom {
-        border: 2px solid var(--gold);
-        color: var(--gold);
-        background: transparent;
-        border-radius: 50px;
-        padding: 0.6rem 1.6rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-      }
-      
-      .btn-outline-custom:hover {
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        color: white;
-        border-color: transparent;
-      }
-      
-      .table-custom {
-        border-collapse: separate;
-        border-spacing: 0 0.5rem;
-      }
-      
-      .table-custom thead th {
-        background: linear-gradient(135deg, var(--cream) 0%, white 100%);
-        border: none;
-        padding: 1rem;
-        font-weight: 700;
-        color: var(--dark);
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        letter-spacing: 0.5px;
-      }
-      
-      .table-custom tbody tr {
-        background: white;
-        box-shadow: var(--shadow-sm);
-        transition: all 0.3s ease;
-      }
-      
-      .table-custom tbody tr:hover {
-        box-shadow: var(--shadow-md);
-        transform: scale(1.01);
-      }
-      
-      .table-custom tbody td {
-        padding: 1.2rem 1rem;
-        border: none;
-        vertical-align: middle;
-      }
-      
-      .table-custom tbody tr td:first-child {
-        border-radius: 12px 0 0 12px;
-      }
-      
-      .table-custom tbody tr td:last-child {
-        border-radius: 0 12px 12px 0;
-      }
-      
-      .notification-item {
-        background: white;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 0.8rem;
-        border-left: 4px solid var(--gold);
-        box-shadow: var(--shadow-sm);
-        transition: all 0.3s ease;
-      }
-      
-      .notification-item:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateX(5px);
-      }
-      
-      .notification-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        flex-shrink: 0;
-      }
-      
-      .notification-order {
-        background: linear-gradient(135deg, #FFF4CE 0%, #FFE8A3 100%);
-      }
-      
-      .notification-success {
-        background: linear-gradient(135deg, #E8F7EE 0%, #D1F0DD 100%);
-      }
-      
-      .notification-info {
-        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-      }
-      
-      .notification-warning {
-        background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
-      }
-      
-      .tab-nav {
-        display: flex;
-        gap: 0.5rem;
-        background: var(--cream);
-        padding: 0.5rem;
-        border-radius: 50px;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-      }
-      
-      .tab-button {
-        padding: 0.7rem 1.5rem;
-        border-radius: 50px;
-        border: none;
-        background: transparent;
-        color: var(--dark);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-      }
-      
-      .tab-button.active {
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(212,175,55,0.3);
-      }
-      
-      .modal-custom {
-        background: white;
-        border-radius: 24px;
-        padding: 2.5rem;
-        box-shadow: var(--shadow-lg);
-        border: 1px solid rgba(212,175,55,0.1);
-        max-width: 540px;
-        width: 100%;
-        max-height: 90vh;
-        overflow-y: auto;
-      }
-      
-      .modal-header-custom {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        color: var(--dark);
-      }
-      
-      .form-control-custom {
-        border: 2px solid rgba(0,0,0,0.08);
-        border-radius: 12px;
-        padding: 0.8rem 1rem;
-        transition: all 0.3s ease;
-      }
-      
-      .form-control-custom:focus {
-        border-color: var(--gold);
-        box-shadow: 0 0 0 4px rgba(212,175,55,0.1);
-        outline: none;
-      }
-      
-      footer { 
-        margin-top: 4rem;
-        background: linear-gradient(135deg, #2C2416 0%, #1a1410 100%);
-        color: #fff;
-        padding: 3rem 0 2rem;
-        position: relative;
-      }
-      
-      footer::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--gold), transparent);
-      }
-      
-      @media (max-width: 768px) { 
-        .admin-hero { 
-          padding-top: 140px;
-        }
-        
-        .stats-card {
-          padding: 1.2rem 1rem;
-        }
-        
-        .section-card {
-          padding: 1.5rem;
-        }
-        
-        .profile-card {
-          padding: 1.5rem;
-        }
-        
-        .table-custom {
-          font-size: 0.9rem;
-        }
-        
-        .tab-nav {
-          overflow-x: auto;
-          flex-wrap: nowrap;
-        }
-      }
-      
-      ::-webkit-scrollbar {
-        width: 10px;
-      }
-      
-      ::-webkit-scrollbar-track {
-        background: var(--light);
-      }
-      
-      ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
-        border-radius: 10px;
-      }
-      
-      ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--gold) 100%);
-      }
-    `;
-    
-    const style = document.createElement('style');
-    style.id = 'admin-page-styles';
-    style.appendChild(document.createTextNode(css));
-    document.head.appendChild(style);
-
     const handleScroll = () => {
       const nav = document.querySelector('.wps-navbar');
       if (!nav) return;
       if (window.scrollY > 40) nav.classList.add('navbar-scrolled'); 
       else nav.classList.remove('navbar-scrolled');
     };
+    
     window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      const el = document.getElementById('admin-page-styles');
-      if (el) el.remove();
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const renderOverview = () => (
@@ -715,7 +758,7 @@ export default function AdminPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="stats-icon">🏛️</div>
-          <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Total Services</div>
+          <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Venues</div>
           <div className="stats-value">{stats.totalVenues}</div>
         </motion.div>
       </div>
@@ -727,7 +770,7 @@ export default function AdminPage() {
           transition={{ delay: 0.1 }}
         >
           <div className="stats-icon">👥</div>
-          <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Total Customers</div>
+          <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Customers</div>
           <div className="stats-value">{stats.totalCustomers}</div>
         </motion.div>
       </div>
@@ -800,7 +843,8 @@ export default function AdminPage() {
     <div className="section-card">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 className="section-header mb-0">Service Providers Management</h5>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 align-items-center">
+          {isLoading && <div className="loading-spinner me-2"></div>}
           <select 
             className="form-select form-control-custom" 
             style={{ width: 'auto' }}
@@ -810,8 +854,15 @@ export default function AdminPage() {
             <option value="all">All Status</option>
             <option value="Active">Active</option>
             <option value="Pending">Pending</option>
-            <option value="Suspended">Suspended</option>
+            <option value="Rejected">Rejected</option>
           </select>
+          <button 
+            className="btn btn-primary-custom btn-sm"
+            onClick={fetchData}
+            disabled={isLoading}
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -820,53 +871,82 @@ export default function AdminPage() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Contact</th>
-              <th>Rating</th>
+              <th>Service Type</th>
+              <th>City</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {serviceProviders.filter(v => filterStatus === 'all' || v.status === filterStatus).map(provider => (
+            {serviceProviders
+              .filter(v => filterStatus === 'all' || v.status === filterStatus)
+              .map(provider => (
               <tr key={provider.id}>
                 <td style={{ fontWeight: 600 }}>{provider.name}</td>
                 <td>{provider.type}</td>
-                <td>
-                  <div style={{ fontSize: '0.9rem' }}>
-                    <div>{provider.email}</div>
-                    <div className="text-muted">{provider.phone}</div>
-                  </div>
-                </td>
-                <td>
-                  <span style={{ color: 'var(--gold)', fontWeight: 600 }}>⭐ {provider.rating}</span>
-                </td>
+                <td>{provider.city}</td>
                 <td>
                   <span className={`status-pill status-${provider.status.toLowerCase()}`}>
                     {provider.status}
                   </span>
+                 
                 </td>
                 <td>
-                  <div className="d-flex gap-2">
+                  <div className="d-flex gap-2 flex-wrap">
                     {provider.status === 'Pending' && (
-                      <button 
-                        className="btn btn-sm btn-success" 
-                        style={{ borderRadius: 8 }}
-                        onClick={() => approveServiceProvider(provider.id)}
-                        title="Approve"
-                      >
-                        ✓
-                      </button>
+                      <>
+                        <button 
+                          className="btn btn-sm btn-success" 
+                          style={{ borderRadius: 8 }}
+                          onClick={() => updateServiceProviderStatus(provider.id, 'Active')}
+                          disabled={isLoading}
+                          title="Approve & Activate"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-danger" 
+                          style={{ borderRadius: 8 }}
+                          onClick={() => updateServiceProviderStatus(provider.id, 'Rejected')}
+                          disabled={isLoading}
+                          title="Reject"
+                        >
+                          ✗ Reject
+                        </button>
+                      </>
                     )}
                     {provider.status === 'Active' && (
                       <button 
                         className="btn btn-sm btn-warning" 
                         style={{ borderRadius: 8 }}
-                        onClick={() => suspendServiceProvider(provider.id)}
-                        title="Suspend"
+                        onClick={() => updateServiceProviderStatus(provider.id, 'Pending')}
+                        disabled={isLoading}
+                        title="Deactivate"
                       >
-                        ⏸
+                        ⏸ Deactivate
                       </button>
+                    )}
+                    {provider.status === 'Rejected' && (
+                      <>
+                        <button 
+                          className="btn btn-sm btn-success" 
+                          style={{ borderRadius: 8 }}
+                          onClick={() => updateServiceProviderStatus(provider.id, 'Active')}
+                          disabled={isLoading}
+                          title="Approve"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-secondary" 
+                          style={{ borderRadius: 8 }}
+                          onClick={() => updateServiceProviderStatus(provider.id, 'Pending')}
+                          disabled={isLoading}
+                          title="Reset to Pending"
+                        >
+                          ⟲ Reset
+                        </button>
+                      </>
                     )}
                     <button 
                       className="btn btn-sm btn-outline-primary" 
@@ -874,20 +954,32 @@ export default function AdminPage() {
                       onClick={() => openModal('viewProvider', provider)}
                       title="View Details"
                     >
-                      👁️
+                      👁️ View
                     </button>
                     <button 
                       className="btn btn-sm btn-outline-danger" 
                       style={{ borderRadius: 8 }}
-                      onClick={() => deleteServiceProvider(provider.id)}
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete ${provider.name}?`)) {
+                          deleteServiceProvider(provider.id);
+                        }
+                      }}
+                      disabled={isLoading}
                       title="Delete"
                     >
-                      🗑️
+                      🗑️ Delete
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+            {serviceProviders.length === 0 && (
+              <tr>
+                <td colSpan="5" className="text-center py-4">
+                  <div className="text-muted">No service providers found</div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -898,6 +990,7 @@ export default function AdminPage() {
     <div className="section-card">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 className="section-header mb-0">Customer Management</h5>
+        {isLoading && <div className="loading-spinner"></div>}
       </div>
 
       <div className="table-responsive">
@@ -905,9 +998,9 @@ export default function AdminPage() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Contact</th>
-              <th>Bookings</th>
-              <th>Total Spent</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>City</th>
               <th>Join Date</th>
               <th>Status</th>
               <th>Actions</th>
@@ -917,18 +1010,13 @@ export default function AdminPage() {
             {customers.map(customer => (
               <tr key={customer.id}>
                 <td style={{ fontWeight: 600 }}>{customer.name}</td>
-                <td>
-                  <div style={{ fontSize: '0.9rem' }}>
-                    <div>{customer.email}</div>
-                    <div className="text-muted">{customer.phone}</div>
-                  </div>
-                </td>
-                <td>{customer.bookings}</td>
-                <td>{customer.totalSpent.toLocaleString()} ILS</td>
+                <td>{customer.email}</td>
+                <td>{customer.phone}</td>
+                <td>{customer.city}</td>
                 <td>{customer.joinDate}</td>
                 <td>
                   <span className={`status-pill status-${customer.status.toLowerCase()}`}>
-                    {customer.status}
+                    {customer.status === 'Active' ? 'Active' : 'Inactive'}
                   </span>
                 </td>
                 <td>
@@ -939,22 +1027,40 @@ export default function AdminPage() {
                       onClick={() => openModal('viewCustomer', customer)}
                       title="View Details"
                     >
-                      👁️
+                      👁️ View
                     </button>
-                    {customer.status === 'Active' && (
+                    {customer.status === 'Active' ? (
                       <button 
                         className="btn btn-sm btn-warning" 
                         style={{ borderRadius: 8 }}
-                        onClick={() => suspendCustomer(customer.id)}
-                        title="Suspend"
+                        onClick={() => updateCustomerStatus(customer.id, 'Inactive')}
+                        disabled={isLoading}
+                        title="Deactivate"
                       >
-                        ⏸
+                        ⏸ Deactivate
+                      </button>
+                    ) : (
+                      <button 
+                        className="btn btn-sm btn-success" 
+                        style={{ borderRadius: 8 }}
+                        onClick={() => updateCustomerStatus(customer.id, 'Active')}
+                        disabled={isLoading}
+                        title="Activate"
+                      >
+                        ✓ Activate
                       </button>
                     )}
                   </div>
                 </td>
               </tr>
             ))}
+            {customers.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center py-4">
+                  <div className="text-muted">No customers found</div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -967,48 +1073,6 @@ export default function AdminPage() {
         <h5 className="section-header mb-0">Payments & Commissions</h5>
       </div>
 
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div style={{ 
-            background: 'linear-gradient(135deg, #E8F7EE 0%, #D1F0DD 100%)', 
-            padding: '1.5rem', 
-            borderRadius: 16,
-            border: '1px solid rgba(31,122,52,0.2)'
-          }}>
-            <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Total Revenue</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#1F7A34' }}>
-              {payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()} ILS
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div style={{ 
-            background: 'linear-gradient(135deg, #FFF4CE 0%, #FFE8A3 100%)', 
-            padding: '1.5rem', 
-            borderRadius: 16,
-            border: '1px solid rgba(138,107,0,0.2)'
-          }}>
-            <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Total Commission</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8A6B00' }}>
-              {payments.reduce((sum, p) => sum + p.commission, 0).toLocaleString()} ILS
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div style={{ 
-            background: 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)', 
-            padding: '1.5rem', 
-            borderRadius: 16,
-            border: '1px solid rgba(21,101,192,0.2)'
-          }}>
-            <div className="text-muted mb-2" style={{ fontWeight: 600 }}>Net to Providers</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#1565C0' }}>
-              {payments.reduce((sum, p) => sum + p.netAmount, 0).toLocaleString()} ILS
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="table-responsive">
         <table className="table table-custom">
           <thead>
@@ -1016,10 +1080,8 @@ export default function AdminPage() {
               <th>Payment ID</th>
               <th>Customer</th>
               <th>Amount</th>
-              <th>Commission (15%)</th>
-              <th>Net Amount</th>
+              <th>Commission</th>
               <th>Date</th>
-              <th>Method</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -1031,12 +1093,10 @@ export default function AdminPage() {
                 <td>{payment.customer}</td>
                 <td>{payment.amount.toLocaleString()} ILS</td>
                 <td style={{ color: 'var(--gold)', fontWeight: 600 }}>{payment.commission.toLocaleString()} ILS</td>
-                <td style={{ fontWeight: 600 }}>{payment.netAmount.toLocaleString()} ILS</td>
                 <td>{payment.date}</td>
-                <td>{payment.method}</td>
                 <td>
                   <span className={`status-pill status-${payment.status.toLowerCase()}`}>
-                    {payment.status}
+                    {payment.status === 'Completed' ? 'Completed' : 'Pending'}
                   </span>
                 </td>
                 <td>
@@ -1047,67 +1107,49 @@ export default function AdminPage() {
                       onClick={() => openModal('viewPayment', payment)}
                       title="View Details"
                     >
-                      👁️
+                      👁️ View
                     </button>
                     {payment.status === 'Pending' && (
                       <button 
                         className="btn btn-sm btn-success" 
                         style={{ borderRadius: 8 }}
-                        onClick={() => processPayment(payment.id)}
-                        title="Process Payment"
+                        onClick={() => updatePaymentStatus(payment.id, 'Completed')}
+                        disabled={isLoading}
+                        title="Complete Payment"
                       >
-                        ✓
+                        ✓ Complete
+                      </button>
+                    )}
+                    {payment.status === 'Completed' && (
+                      <button 
+                        className="btn btn-sm btn-warning" 
+                        style={{ borderRadius: 8 }}
+                        onClick={() => updatePaymentStatus(payment.id, 'Pending')}
+                        disabled={isLoading}
+                        title="Mark as Pending"
+                      >
+                        ↩️ Pending
                       </button>
                     )}
                   </div>
                 </td>
               </tr>
             ))}
+            {payments.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center py-4">
+                  <div className="text-muted">No payments found</div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 
-  const renderActivityLog = () => (
-    <div className="section-card">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h5 className="section-header mb-0">Activity Log</h5>
-        <button className="btn btn-outline-custom" onClick={() => alert('Logs exported')}>
-          📥 Export Logs
-        </button>
-      </div>
-
-      <div style={{ maxHeight: 600, overflowY: 'auto' }}>
-        {activityLog.map(log => (
-          <div key={log.id} className="notification-item">
-            <div className="d-flex align-items-start gap-3">
-              <div className={`notification-icon notification-${
-                log.type === 'approval' ? 'success' :
-                log.type === 'payment' ? 'success' :
-                log.type === 'suspension' ? 'warning' :
-                'info'
-              }`}>
-                {log.type === 'approval' && '✓'}
-                {log.type === 'payment' && '💰'}
-                {log.type === 'suspension' && '⏸'}
-                {log.type === 'deletion' && '🗑️'}
-              </div>
-              <div className="flex-grow-1">
-                <div style={{ fontSize: '.95rem', fontWeight: 500 }}>
-                  <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{log.user}</span> {log.action}
-                </div>
-                <div className="text-muted small mt-1">{log.timestamp}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
-    <div>
+    <div className="admin-page">
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-light wps-navbar">
         <div className="container">
@@ -1170,7 +1212,7 @@ export default function AdminPage() {
                 Admin Dashboard
               </h1>
               <p className="text-muted mb-0" style={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
-                Complete system control and management for the Wedding Planning Platform
+                Complete management system for the Wedding Planning Platform
               </p>
             </div>
             <div className="col-lg-4 text-lg-end mt-4 mt-lg-0">
@@ -1259,45 +1301,18 @@ export default function AdminPage() {
                   <div className="quick-action-icon">🎯</div>
                   <div>Manage Services</div>
                 </div>
+                <div className="quick-action" onClick={() => setActiveTab('customers')}>
+                  <div className="quick-action-icon">👥</div>
+                  <div>Manage Customers</div>
+                </div>
                 <div className="quick-action" onClick={() => setActiveTab('payments')}>
                   <div className="quick-action-icon">💰</div>
                   <div>Payments</div>
                 </div>
-                <div className="quick-action" onClick={() => setActiveTab('activity')}>
-                  <div className="quick-action-icon">📜</div>
-                  <div>Activity Log</div>
-                </div>
               </div>
             </motion.div>
 
-            {/* Notifications */}
-            <motion.div 
-              className="section-card" 
-              initial={{ opacity: 0, x: -30 }} 
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h6 className="section-header" style={{ fontSize: '1.2rem' }}>System Alerts</h6>
-              <div style={{ maxHeight: 400, overflowY: 'auto' }}>
-                {notifications.map(n => (
-                  <div key={n.id} className="notification-item">
-                    <div className="d-flex align-items-start gap-3">
-                      <div className={`notification-icon notification-${n.type}`}>
-                        {n.type === 'order' && '📦'}
-                        {n.type === 'success' && '✅'}
-                        {n.type === 'info' && 'ℹ️'}
-                        {n.type === 'warning' && '⚠️'}
-                      </div>
-                      <div className="flex-grow-1">
-                        <div style={{ fontSize: '.95rem', fontWeight: 500 }}>{n.text}</div>
-                        <div className="text-muted small mt-1">{n.time}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </motion.div>
+           
           </aside>
 
           {/* Main Content Area */}
@@ -1314,7 +1329,7 @@ export default function AdminPage() {
                 className={`tab-button ${activeTab === 'services' ? 'active' : ''}`}
                 onClick={() => setActiveTab('services')}
               >
-                🎯 Services
+                🎯 Service Providers
               </button>
               <button 
                 className={`tab-button ${activeTab === 'customers' ? 'active' : ''}`}
@@ -1327,12 +1342,6 @@ export default function AdminPage() {
                 onClick={() => setActiveTab('payments')}
               >
                 💰 Payments
-              </button>
-              <button 
-                className={`tab-button ${activeTab === 'activity' ? 'active' : ''}`}
-                onClick={() => setActiveTab('activity')}
-              >
-                📜 Activity Log
               </button>
             </div>
 
@@ -1349,7 +1358,6 @@ export default function AdminPage() {
                 {activeTab === 'services' && renderServiceProviders()}
                 {activeTab === 'customers' && renderCustomers()}
                 {activeTab === 'payments' && renderPayments()}
-                {activeTab === 'activity' && renderActivityLog()}
               </motion.div>
             </AnimatePresence>
           </section>
@@ -1371,7 +1379,7 @@ export default function AdminPage() {
                 Wedding Planning System
               </div>
               <p className="text-muted mb-0" style={{ color: '#c9c5c0' }}>
-                Complete administrative control for managing the wedding planning platform.
+                Complete administrative control for the wedding planning platform.
               </p>
             </div>
             <div className="col-md-6 text-md-end">
@@ -1407,6 +1415,7 @@ export default function AdminPage() {
           >
             <motion.div 
               className="modal-custom" 
+              style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}
               initial={{ scale: 0.9, y: 20 }} 
               animate={{ scale: 1, y: 0 }} 
               exit={{ scale: 0.9, y: 20 }}
@@ -1422,34 +1431,85 @@ export default function AdminPage() {
                 <div>
                   {modalType === 'viewProvider' && (
                     <div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Name</label>
-                        <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{selectedItem.name}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Service Type</label>
-                        <div>{selectedItem.type}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Email</label>
-                        <div>{selectedItem.email}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Phone</label>
-                        <div>{selectedItem.phone}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Rating</label>
-                        <div style={{ color: 'var(--gold)', fontWeight: 600 }}>⭐ {selectedItem.rating}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Status</label>
-                        <div>
-                          <span className={`status-pill status-${selectedItem.status.toLowerCase()}`}>
-                            {selectedItem.status}
-                          </span>
+                      {isLoading && (
+                        <div className="text-center py-3">
+                          <div className="loading-spinner"></div>
+                          <div className="text-muted small mt-2">Loading service details...</div>
                         </div>
-                      </div>
+                      )}
+                      
+                      {!isLoading && (
+                        <>
+                          <h6 className="mb-3" style={{ color: 'var(--gold)' }}>👤 Owner Information</h6>
+                          <div className="row mb-4">
+                            <div className="col-md-6">
+                              <div className="info-item">
+                                <span className="text-muted">Name:</span>
+                                <strong>{selectedItem.name || 'N/A'}</strong>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">Email:</span>
+                                <span>{selectedItem.email || 'N/A'}</span>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">Phone:</span>
+                                <span>{selectedItem.phone || 'N/A'}</span>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">City:</span>
+                                <span>{selectedItem.city || 'N/A'}</span>
+                              </div>
+                            </div>
+                            <div className="col-md-6">
+                              <div className="info-item">
+                                <span className="text-muted">Service Type:</span>
+                                <span className="badge bg-warning">{selectedItem.type || 'N/A'}</span>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">Status:</span>
+                                <span className={`status-pill status-${selectedItem.status?.toLowerCase() || 'pending'}`}>
+                                  {selectedItem.status || 'Pending'}
+                                </span>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">Rate:</span>
+                                <span>⭐ {selectedItem.rate || 0}/5</span>
+                              </div>
+                              <div className="info-item">
+                                <span className="text-muted">Created:</span>
+                                <span>{new Date(selectedItem.created_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {selectedItem.description && (
+                            <div className="mb-4">
+                              <h6 className="mb-2" style={{ color: 'var(--gold)' }}>📝 Description</h6>
+                              <div className="p-3 bg-light rounded">
+                                {selectedItem.description}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {serviceDetails ? (
+                            renderServiceDetails(serviceDetails)
+                          ) : (
+                            <div className="alert alert-warning">
+                              <div className="d-flex align-items-center">
+                                <span className="me-2">⚠️</span>
+                                <span>No service details found for this {selectedItem.type} provider.</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-4 small text-muted">
+                            <div><strong>Database Values:</strong></div>
+                            <div>visible = {selectedItem.visible ? 'true' : 'false'}</div>
+                            <div>accept = {selectedItem.accept === true ? 'true' : 
+                                           selectedItem.accept === false ? 'false' : 'null'}</div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1468,12 +1528,8 @@ export default function AdminPage() {
                         <div>{selectedItem.phone}</div>
                       </div>
                       <div className="mb-3">
-                        <label className="text-muted small">Total Bookings</label>
-                        <div>{selectedItem.bookings}</div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted small">Total Spent</label>
-                        <div>{selectedItem.totalSpent.toLocaleString()} ILS</div>
+                        <label className="text-muted small">City</label>
+                        <div>{selectedItem.city}</div>
                       </div>
                       <div className="mb-3">
                         <label className="text-muted small">Join Date</label>
@@ -1483,8 +1539,11 @@ export default function AdminPage() {
                         <label className="text-muted small">Status</label>
                         <div>
                           <span className={`status-pill status-${selectedItem.status.toLowerCase()}`}>
-                            {selectedItem.status}
+                            {selectedItem.status === 'Active' ? 'Active' : 'Inactive'}
                           </span>
+                          <div className="small text-muted mt-1">
+                            Database value: verified={selectedItem.verified ? 'true' : 'false'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1509,7 +1568,7 @@ export default function AdminPage() {
                         <div style={{ color: 'var(--gold)', fontWeight: 600 }}>{selectedItem.commission.toLocaleString()} ILS</div>
                       </div>
                       <div className="mb-3">
-                        <label className="text-muted small">Net Amount to Provider</label>
+                        <label className="text-muted small">Net Amount</label>
                         <div style={{ fontWeight: 600 }}>{selectedItem.netAmount.toLocaleString()} ILS</div>
                       </div>
                       <div className="mb-3">
@@ -1524,7 +1583,7 @@ export default function AdminPage() {
                         <label className="text-muted small">Status</label>
                         <div>
                           <span className={`status-pill status-${selectedItem.status.toLowerCase()}`}>
-                            {selectedItem.status}
+                            {selectedItem.status === 'Completed' ? 'Completed' : 'Pending'}
                           </span>
                         </div>
                       </div>

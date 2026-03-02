@@ -1,0 +1,73 @@
+.main-container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.items-section {
+  flex: 2; /* القسم الأكبر للجدول */
+}
+
+.add-item-section {
+  flex: 1; /* القسم الأصغر للنموذج */
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* الجدول */
+.decorations-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.decorations-table th,
+.decorations-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.decorations-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.decorations-table img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+/* أزرار */
+.saveBtn {
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.deleteBtn {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* النموذج */
+.add-item-section form label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.add-item-section form input {
+  width: 100%;
+  padding: 5px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+}

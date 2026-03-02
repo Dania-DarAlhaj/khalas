@@ -33,8 +33,9 @@ import VisitRequestsPhoto from "./components/VisitRequestsPhoto";
 import BookingRequestsphoto from "./components/BookingRequestsphoto";
 import AddPackagephoto from "./components/AddPackagephoto";
 import PhotographerDetails from "./components/PhotographerDetails";
-
-
+import DecorationOwnerPage from "./components/DecorationOwnerPage";
+import ManageDecorationItems from "./components/ManageDecorationItems";
+import UserProfile from "./components/UserProfile";
 function App() {
   return (
     <Routes>
@@ -52,7 +53,7 @@ function App() {
       <Route path="/VerifyPage" element={<VerifyPage />} />
       <Route path="/OwnerPage" element={<OwnerPage />} />
       <Route path="/HallRegestration" element={<HallRegestration />} />
-   <Route path="/venue/:userId" element={<VenueDetails />} />
+   <Route path="/VenueDetails/:userId" element={<VenueDetails />} />
       <Route path="/UserPage" element={<UserPage />} />
       <Route path="/AddBookingByOwnerHall" element={<AddBookingByOwnerHall />} />
       <Route path="/SeeBookingDetailsHall" element={<SeeBookingDetailsHall />} />
@@ -66,12 +67,15 @@ function App() {
       <Route path="/DJprofile" element={<DJprofile />} />
       <Route path="/DjpackageManagement" element={<DjpackageManagement />} />
       <Route path="/PhotographersPageOwnerhome" element={<PhotographersPageOwnerhome />} />
+
       <Route path="/PackageManagementPhoto" element={<PackageManagementPhoto />} />
       <Route path="/VisitRequestsPhoto" element={<VisitRequestsPhoto />} />
       <Route path="/BookingRequestsphoto" element={<BookingRequestsphoto />} />
       <Route path="/AddPackagephoto" element={<AddPackagephoto />} />
       <Route path="/PhotographerDetails/:ownerId" element={<PhotographerDetails />} />
-
+< Route path="/DecorationOwnerPage" element={<DecorationOwnerPage />} />
+< Route path="/ManageDecorationItems" element={<ManageDecorationItems />} />
+< Route path="/UserProfile" element={<UserProfile />} />
 
     </Routes>
   );

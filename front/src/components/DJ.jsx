@@ -9,13 +9,7 @@ export default function DJPage() {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [selectedDate, setSelectedDate] = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { type: 'bot', text: 'Welcome! I\'m here to help you find the perfect DJ for your wedding celebration. How can I assist you today?' }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const messagesEndRef = useRef(null);
-
+  
   const [djs, setDjs] = useState([]);
   const [loadingDjs, setLoadingDjs] = useState(true);
 
@@ -168,43 +162,6 @@ export default function DJPage() {
     fetchDJs();
   }, []);
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim() === '') return;
-
-    const userMessage = { type: 'user', text: inputMessage };
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-
-    setTimeout(() => {
-      const botResponse = generateBotResponse(inputMessage);
-      setMessages(prev => [...prev, { type: 'bot', text: botResponse }]);
-    }, 1000);
-  };
-
-  const generateBotResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('سعر') || lowerMessage.includes('تكلفة')) {
-      return 'Our DJ services range from 1,800 ₪ to 3,000 ₪ depending on experience and equipment. I can help you find a DJ that fits your budget. What price range are you considering?';
-    } else if (lowerMessage.includes('location') || lowerMessage.includes('where') || lowerMessage.includes('موقع') || lowerMessage.includes('مكان')) {
-      return 'We have professional DJs available in Ramallah, Nablus, Bethlehem, and Hebron. Which location do you prefer for your wedding?';
-    } else if (lowerMessage.includes('date') || lowerMessage.includes('available') || lowerMessage.includes('تاريخ') || lowerMessage.includes('متاح')) {
-      return 'Our DJs have various available dates. You can use the date filter to check which DJs are available on your preferred date. When is your wedding date?';
-    } else if (lowerMessage.includes('book') || lowerMessage.includes('reservation') || lowerMessage.includes('حجز') || lowerMessage.includes('احجز')) {
-      return 'Excellent! To book a DJ consultation, please call us at 02-1234567 or you can leave your phone number and we will call you within 24 hours.';
-    } else if (lowerMessage.includes('service') || lowerMessage.includes('equipment') || lowerMessage.includes('خدمة') || lowerMessage.includes('معدات')) {
-      return 'All our DJs come with professional sound systems, lighting equipment, and microphones. Some also offer additional services like MC hosting and special effects. Would you like to know more about a specific DJ?';
-    } else if (lowerMessage.includes('thank') || lowerMessage.includes('شكر')) {
-      return 'You\'re welcome! We\'re happy to serve you. Feel free to ask any other questions. We\'re here to make your wedding day perfect! 💍✨';
-    } else {
-      return 'Thank you for contacting us! I can help you with:\n• Information about prices and packages\n• DJ locations and availability\n• Booking a consultation\n• Equipment and services\n\nWhat would you like to know?';
-    }
-  };
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector('.wps-navbar');
@@ -322,28 +279,14 @@ export default function DJPage() {
 
                 <div className="col-md-4">
                   <div className="filter-group">
-                    <label className="filter-label">Price Range</label>
-                    <select
-                      className="filter-select"
-                      value={selectedPrice}
-                      onChange={(e) => setSelectedPrice(e.target.value)}
-                    >
-                      {priceRanges.map(range => (
-                        <option key={range.value} value={range.value}>{range.label}</option>
-                      ))}
-                    </select>
+                   
+                  
                   </div>
                 </div>
 
                 <div className="col-md-4">
                   <div className="filter-group">
-                    <label className="filter-label">Available Date</label>
-                    <input
-                      type="date"
-                      className="filter-date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                    />
+                    
                   </div>
                 </div>
               </div>
@@ -368,19 +311,7 @@ export default function DJPage() {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                 >
                   <div className="dj-card">
-                    <div className="dj-image-wrapper">
-                      <img 
-                        src={dj.image} 
-                        alt={dj.name} 
-                        className="dj-image"
-                        onError={(e) => {
-                          e.target.src = '/images/DJ.jpg';
-                        }}
-                      />
-                      {dj.rating >= 4.5 && (
-                        <div className="dj-badge">Top Rated</div>
-                      )}
-                    </div>
+                   
 
                     <div className="dj-content">
                       <h3 className="dj-name">{dj.name}</h3>
@@ -402,7 +333,7 @@ export default function DJPage() {
                       
                       </div>
 
-                      <div className="dj-price">{(dj.price || 0).toLocaleString()} ₪</div>
+                     
 
                       <button className="btn-book">Visit Now</button>
                     </div>
@@ -468,52 +399,9 @@ export default function DJPage() {
         </div>
       </footer>
 
-      {/* Chatbot */}
-      <div className="chatbot-container">
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.div
-              className="chatbot-window"
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="chatbot-header">
-                <span>AI DJ Assistant</span>
-                <button className="chatbot-close" onClick={() => setChatOpen(false)}>×</button>
-              </div>
-
-              <div className="chatbot-messages">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`message message-${msg.type}`}>
-                    <div className="message-bubble">{msg.text}</div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="chatbot-input-area">
-                <input
-                  type="text"
-                  className="chatbot-input"
-                  placeholder="Type your message..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button className="chatbot-send" onClick={handleSendMessage}>
-                  ➤
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <button className="chatbot-toggle" onClick={() => setChatOpen(!chatOpen)}>
-          {chatOpen ? '✕' : '💬'}
-        </button>
-      </div>
+      
+    
+      
     </div>
   );
 }

@@ -7,12 +7,19 @@ export default function DecorationPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedTypes, setSelectedTypes] = useState([]);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { type: 'bot', text: 'Welcome! I\'m here to help you find the perfect decoration services for your wedding. How can I assist you today?' }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const messagesEndRef = useRef(null);
+ const locationOptions = [
+  "Ramallah",
+  "Bethlehem",
+  "Jerusalem",
+  "Hebron",
+  "Nablus",
+  "Jenin" ,
+  "Tulkarm",
+  "Qalqilya",
+  "Salfit",
+  "Tubas",
+  "Jericho"
+];
   const decorationTypes = [
     "Groom's Car Decoration",
     "Wedding Favors",
@@ -29,152 +36,66 @@ export default function DecorationPage() {
   const [loadingDecor, setLoadingDecor] = useState(true);
   const [errorDecor, setErrorDecor] = useState(null);
 
-  useEffect(() => {
-    const fetchDecor = async () => {
-      setLoadingDecor(true);
+const getFilteredServices = () => {
+  return decorationServices.filter((service) => {
 
-      const { data: owners, error: ownersError } = await supabase
-        .from('owners')
-        .select('owner_id, user_id, owner_type, users:user_id (city, name)')
-        .eq('owner_type', 'decoration');
+    const name = service.owners?.users?.name?.toLowerCase() || "";
+    const city = service.owners?.users?.city?.toLowerCase() || "";
+    const type = service.decoration_type?.toLowerCase() || "";
 
-      if (ownersError) {
-        console.error('Error fetching decoration owners:', ownersError);
-        setErrorDecor('Error fetching owners: ' + ownersError.message);
-        setDecorationServices([]);
-        setLoadingDecor(false);
-        return;
-      }
+    const search = searchTerm.toLowerCase();
 
-      console.log('decoration owners', owners);
+    // search by name OR city
+    const matchesSearch =
+      name.includes(search) ||
+      city.includes(search);
 
-      const ownerUserIds = (owners || []).map(o => o.user_id).filter(Boolean);
-      if (ownerUserIds.length === 0) {
-        setDecorationServices([]);
-        setLoadingDecor(false);
-        return;
-      }
+    // filter by location dropdown
+    const matchesLocation =
+      selectedLocation === "all" ||
+      city === selectedLocation.toLowerCase();
 
-      const { data: rows, error: rowsError } = await supabase
-        .from('decorationservices')
-        .select('*')
-        .in('user_id', ownerUserIds);
+    // filter by decoration types (multi select)
+    const matchesType =
+      selectedTypes.length === 0 ||
+      selectedTypes.includes(service.decoration_type);
 
-      if (rowsError) {
-        console.error('Error fetching decoration rows:', rowsError);
-        setErrorDecor('Error fetching decorations: ' + rowsError.message);
-        setDecorationServices([]);
-        setLoadingDecor(false);
-        return;
-      }
-
-      console.log('decoration rows', rows);
-
-      const hasService = (row, label) => {
-        const normalizedLabel = (label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        return Object.keys(row).some(k => {
-          const kn = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return kn.includes(normalizedLabel) && Boolean(row[k]);
-        });
-      };
-
-      const services = (rows || []).map(r => {
-        const owner = (owners || []).find(o => o.user_id === r.user_id) || {};
-        const servicesList = decorationTypes.filter(t => hasService(r, t));
-        return {
-          id: r.id,
-          user_id: r.user_id,
-          name: owner.users?.name || r.name || 'Decoration Service',
-          image: r.imgurl || r.image || r.photo || '/images/Decor.jpg',
-          location: owner.users?.city || 'Unknown',
-          services: servicesList,
-          raw: r
-        };
-      });
-
-      console.log('mapped decoration services', services);
-      setDecorationServices(services);
-      setErrorDecor(null);
-      setLoadingDecor(false);
-    };
-
-    fetchDecor();
-  }, []);
-
-  const locations = ['all', 'Ramallah', 'Nablus', 'Bethlehem', 'Hebron'];
-
-  const handleTypeToggle = (type) => {
-    setSelectedTypes(prev => 
-      prev.includes(type) 
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
-    );
-  };
-
-  const filteredServices = decorationServices.filter(service => {
-    const matchesSearch = (service.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (service.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (service.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLocation = selectedLocation === 'all' || service.location === selectedLocation;
-    const matchesTypes = selectedTypes.length === 0 || selectedTypes.some(type => (service.services || []).includes(type));
-    return matchesSearch && matchesLocation && matchesTypes;
+    return matchesSearch && matchesLocation && matchesType;
   });
+};
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim() === '') return;
+useEffect(() => {
+  const fetchDecorations = async () => {
+    setLoadingDecor(true);
+    try {
+      const { data, error } = await supabase
+        .from('decoration_item')
+        .select(`
+          *,
+          owners (
+            user_id,
+            users (
+              name,
+              city,
+              phone
+            )
+          )
+        `);
 
-    const userMessage = { type: 'user', text: inputMessage };
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-
-    setTimeout(() => {
-      const botResponse = generateBotResponse(inputMessage);
-      setMessages(prev => [...prev, { type: 'bot', text: botResponse }]);
-    }, 1000);
-  };
-
-  const generateBotResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('location') || lowerMessage.includes('where')) {
-      return 'We have excellent decoration services in Ramallah, Nablus, Bethlehem, and Hebron. Which location would you prefer?';
-    } else if (lowerMessage.includes('book') || lowerMessage.includes('appointment') || lowerMessage.includes('reserve')) {
-      return 'Great! To book a decoration service, please call us at 02-1234567 or leave your phone number and we will arrange a consultation appointment for you.';
-    } else if (lowerMessage.includes('service') || lowerMessage.includes('type') || lowerMessage.includes('decoration')) {
-      return 'We offer various decoration services including: Stage Decoration, Flower Arrangements, Lighting Setup, Photo Booth Setup, Wedding Entrance Decor, Table Centerpieces, and more. Which service are you interested in?';
-    } else if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('budget')) {
-      return 'Decoration prices vary based on your specific requirements and venue size. Please contact the service provider directly for a detailed quote tailored to your wedding vision.';
-    } else if (lowerMessage.includes('rating') || lowerMessage.includes('review')) {
-      return 'All our decoration partners have excellent ratings from previous clients. You can see their ratings and reviews on each service card. Would you like recommendations for top-rated services?';
-    } else if (lowerMessage.includes('thank')) {
-      return 'You\'re welcome! Happy to serve you. Don\'t hesitate to ask any other questions. We\'re here to make your wedding day perfect! 💍✨';
-    } else {
-      return 'Thank you for contacting us! I can help you with:\n• Finding decoration services by location\n• Information about service types\n• Booking consultation appointments\n• Service recommendations\n\nWhat would you like to know?';
-    }
-  };
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const navbar = document.querySelector('.wps-navbar');
-      if (navbar) {
-        if (window.scrollY > 50) {
-          navbar.classList.add('navbar-scrolled');
-        } else {
-          navbar.classList.remove('navbar-scrolled');
-        }
+      if (error) {
+        setErrorDecor(error.message);
+      } else {
+        console.log('Fetched decorations with owner & user:', data);
+        setDecorationServices(data);
       }
-    };
+    } catch (err) {
+      setErrorDecor(err.message);
+    }
+    setLoadingDecor(false);
+  };
 
-    window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  fetchDecorations();
+}, []);
 
   return (
     <div>
@@ -259,16 +180,19 @@ export default function DecorationPage() {
                 <div className="col-md-12">
                   <div className="filter-group">
                     <label className="filter-label">Location</label>
-                    <select
-                      className="filter-select"
-                      value={selectedLocation}
-                      onChange={(e) => setSelectedLocation(e.target.value)}
-                    >
-                      <option value="all">All Locations</option>
-                      {locations.slice(1).map(loc => (
-                        <option key={loc} value={loc}>{loc}</option>
-                      ))}
-                    </select>
+                <select
+  className="filter-select"
+  value={selectedLocation}
+  onChange={(e) => setSelectedLocation(e.target.value)}
+>
+  <option value="all">All Locations</option>
+
+  {locationOptions.map((city, index) => (
+    <option key={index} value={city}>
+      {city}
+    </option>
+  ))}
+</select>
                   </div>
                 </div>
 
@@ -277,13 +201,19 @@ export default function DecorationPage() {
                     <label className="filter-label">Decoration Types (Select multiple)</label>
                     <div className="type-filters">
                       {decorationTypes.map(type => (
-                        <button
-                          key={type}
-                          className={`type-chip ${selectedTypes.includes(type) ? 'active' : ''}`}
-                          onClick={() => handleTypeToggle(type)}
-                        >
-                          {type}
-                        </button>
+                      <button
+  key={type}
+  className={`type-chip ${selectedTypes.includes(type) ? 'active' : ''}`}
+  onClick={() => {
+    if (selectedTypes.includes(type)) {
+      setSelectedTypes(selectedTypes.filter(t => t !== type));
+    } else {
+      setSelectedTypes([...selectedTypes, type]);
+    }
+  }}
+>
+  {type}
+</button>
                       ))}
                     </div>
                   </div>
@@ -291,60 +221,48 @@ export default function DecorationPage() {
               </div>
             </div>
           </motion.div>
+<div className="services-grid">
+ {getFilteredServices().length > 0 ? (
+    getFilteredServices().map((service, index) => (
+      <motion.div
+        key={index}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: index * 0.1 }}
+      >
+     <div className="service-card simple-card">
 
-          {/* Services Grid */}
-          {loadingDecor ? (
-            <p className="text-center my-5">Loading decoration services...</p>
-          ) : errorDecor ? (
-            <p className="text-center my-5 text-danger">{errorDecor}</p>
-          ) : filteredServices.length > 0 ? (
-            <div className="services-grid">
-              {filteredServices.map((service, index) => (
-                <motion.div
-                  key={service.id}
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <div className="service-card">
-                    <div className="service-image-wrapper">
-                      <img src={service.image} alt={service.name} className="service-image" />
-                    </div>
+  <div className="service-image-wrapper">
+    <img 
+      src={service.imgname ? `/img/decor/${service.imgname}` : '/img/Decor.jpg'} 
+      alt={service.decoration_type} 
+      className="service-image" 
+    />
+  </div>
 
-                    <div className="service-content">
-                      <div className="service-header">
-                        <h3 className="service-name">{service.name}</h3>
-                        <div className="service-rating">
-                          <span className="star-icon">⭐</span>
-                          <span>{service.rating}</span>
-                          <span style={{color: 'var(--text-light)', fontSize: '0.85rem'}}>({service.reviews})</span>
-                        </div>
-                      </div>
+  <div className="service-types">
+    <span className="service-type-badge">
+      {service.decoration_type}
+    </span>
+  </div>
 
-                      <div className="service-location">
-                        <span className="location-icon">📍</span>
-                        <span>{service.location}</span>
-                      </div>
+  <div className="service-owner-info">
+    <h5>{service.owners?.users?.name}</h5>
+    <p>📍 {service.owners?.users?.city}</p>
+    <p>📞 {service.owners?.users?.phone}</p>
+  </div>
 
-                      <p className="service-description">{service.description}</p>
+</div>
+      </motion.div>
+    ))
+  ) : (
+    <div className="no-results">
+      <p>No decoration services found.</p>
+    </div>
+  )}
+</div>
 
-                      <div className="service-types">
-                        {service.services.map((type, idx) => (
-                          <span key={idx} className="service-type-badge">{type}</span>
-                        ))}
-                      </div>
 
-                      <button className="btn-contact">See more</button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-results">
-              <p>No decoration services found matching your criteria. Try adjusting your filters.</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -398,51 +316,7 @@ export default function DecorationPage() {
         </div>
       </footer>
 
-      {/* Chatbot */}
-      <div className="chatbot-container">
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.div
-              className="chatbot-window"
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="chatbot-header">
-                <span>AI Decoration Assistant</span>
-                <button className="chatbot-close" onClick={() => setChatOpen(false)}>×</button>
-              </div>
-
-              <div className="chatbot-messages">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`message message-${msg.type}`}>
-                    <div className="message-bubble">{msg.text}</div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="chatbot-input-area">
-                <input
-                  type="text"
-                  className="chatbot-input"
-                  placeholder="Type your message..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button className="chatbot-send" onClick={handleSendMessage}>
-                  ➤
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <button className="chatbot-toggle" onClick={() => setChatOpen(!chatOpen)}>
-          {chatOpen ? '✕' : '💬'}
-        </button>
-      </div>
+    
     </div>
   );
 }

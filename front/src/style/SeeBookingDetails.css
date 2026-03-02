@@ -10,6 +10,9 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
   --shadow-md: 0 8px 30px rgba(0,0,0,0.08);
   --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
+  --success: #28a745;
+  --danger: #e74c3c;
+  --danger-dark: #c0392b;
 }
 
 * {
@@ -132,8 +135,19 @@ body {
   box-shadow: 0 8px 20px rgba(212,175,55,0.2);
 }
 
+.navbar button:hover::before {
+  left: 100%;
+}
+
+.navbar button.active {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 8px 25px rgba(212,175,55,0.4);
+}
+
 .logout-btn {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
   border: none;
   color: white;
   box-shadow: 0 4px 15px rgba(231,76,60,0.3);
@@ -144,12 +158,42 @@ body {
   box-shadow: 0 8px 25px rgba(231,76,60,0.4);
 }
 
+.logout-btn::before {
+  display: none;
+}
+
 /* ========== PAGE STYLING ========== */
 .owner-details-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #FAF8F5 0%, #FFF9F0 50%, #FAF8F5 100%);
   padding-top: 100px;
   padding-bottom: 4rem;
+}
+
+/* ========== TABLE TITLE ========== */
+.table-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 2rem;
+  font-family: 'Playfair Display', serif;
+  position: relative;
+  display: inline-block;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.table-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--rose-gold) 100%);
+  border-radius: 3px;
 }
 
 /* ========== TABLE STYLING ========== */
@@ -159,10 +203,11 @@ body {
   margin: 3rem auto;
   border-collapse: collapse;
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   font-family: 'Lato', sans-serif;
+  border: 1px solid rgba(212,175,55,0.2);
 }
 
 .booking-table thead {
@@ -177,7 +222,8 @@ body {
   font-size: 1rem;
   letter-spacing: 0.5px;
   border-right: 1px solid rgba(255,255,255,0.1);
-  background: linear-gradient(135deg, rgba(139,115,85,0.9) 0%, rgba(183,110,121,0.9) 100%);
+  background: linear-gradient(135deg, rgba(139,115,85,0.95) 0%, rgba(183,110,121,0.95) 100%);
+  position: relative;
 }
 
 .booking-table th:last-child {
@@ -202,6 +248,7 @@ body {
   padding: 1rem 1.5rem;
   color: var(--dark);
   font-size: 0.95rem;
+  vertical-align: middle;
 }
 
 .booking-table td:first-child {
@@ -209,38 +256,146 @@ body {
   color: var(--primary);
 }
 
+/* ========== EDIT MODE INPUTS ========== */
+.edit-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid rgba(212,175,55,0.3);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: 'Lato', sans-serif;
+  transition: all 0.3s ease;
+  background: white;
+  color: var(--dark);
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+}
+
+textarea.edit-input {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+input[type="date"].edit-input {
+  padding: 0.5rem 0.8rem;
+  color: var(--dark);
+}
+
+input[type="number"].edit-input {
+  -moz-appearance: textfield;
+}
+
+input[type="number"].edit-input::-webkit-outer-spin-button,
+input[type="number"].edit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* ========== ACTION BUTTONS ========== */
-.booking-table .edit,
-.booking-table .cancel {
+.booking-table .edit-btn,
+.booking-table .cancel-btn,
+.booking-table .save-btn {
   padding: 0.6rem 1.2rem;
   margin: 0 0.3rem;
-  border: 2px solid var(--gold);
-  background: transparent;
-  color: var(--primary);
-  border-radius: 6px;
+  border: 2px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
   font-size: 0.85rem;
+  font-family: 'Lato', sans-serif;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
 }
 
-.booking-table .edit:hover {
+/* Edit Button */
+.booking-table .edit-btn {
+  background: transparent;
+  border-color: var(--gold);
+  color: var(--primary);
+}
+
+.booking-table .edit-btn:hover {
   background: var(--gold);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(212,175,55,0.3);
 }
 
-.booking-table .cancel {
-  border-color: #e74c3c;
-  color: #e74c3c;
+/* Cancel Button (Delete) */
+.booking-table .cancel-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: transparent;
 }
 
-.booking-table .cancel:hover {
-  background: #e74c3c;
+.booking-table .cancel-btn:hover {
+  background: var(--danger);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(231,76,60,0.3);
+}
+
+/* Save Button */
+.booking-table .save-btn {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+  padding: 0.6rem 1.5rem;
+}
+
+.booking-table .save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212,175,55,0.4);
+}
+
+/* Secondary Cancel Button (for edit mode) */
+.booking-table .save-btn + .cancel-btn {
+  background: transparent;
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+
+.booking-table .save-btn + .cancel-btn:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* ========== LOADING & NO DATA STATES ========== */
+.loading-spinner {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: var(--primary);
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  max-width: 300px;
+  margin: 2rem auto;
+}
+
+.no-data {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  color: var(--text-light);
+  font-size: 1.2rem;
+  box-shadow: var(--shadow-md);
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+/* ========== TABLE CONTAINER ========== */
+.table-container {
+  padding: 0 2rem;
 }
 
 /* ========== RESPONSIVE ========== */
@@ -250,10 +405,18 @@ body {
     flex-direction: column;
     gap: 0.5rem;
   }
+  
+  .navbar-right {
+    justify-content: center;
+    width: 100%;
+  }
 
   .booking-table {
     width: 95%;
     font-size: 0.85rem;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   .booking-table th,
@@ -265,4 +428,63 @@ body {
     padding: 0.6rem 1.2rem;
     font-size: 0.8rem;
   }
+  
+  .table-title {
+    font-size: 2rem;
+  }
+  
+  .booking-table .edit-btn,
+  .booking-table .cancel-btn,
+  .booking-table .save-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+    margin: 0 0.2rem;
+  }
+  
+  .edit-input {
+    min-width: 100px;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.booking-table tbody tr {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.booking-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.booking-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.booking-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.booking-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.booking-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+
+/* ========== CUSTOM SCROLLBAR ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--primary) 100%);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
 }

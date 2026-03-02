@@ -855,3 +855,56 @@ footer::before {
     transition-duration: 0.01ms !important;
   }
 }
+/* إضافة هذه الأنماط لتحسين مظهر الأزرار */
+.btn-profile-custom {
+  background: linear-gradient(135deg, #8B7355 0%, #D4AF37 100%);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 50px;
+  color: #fff;
+  font-weight: 600;
+  font-size: .9rem;
+  box-shadow: 0 4px 15px rgba(139, 115, 85, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-profile-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+.btn-logout-custom {
+  background: transparent;
+  border: 2px solid #D4AF37;
+  padding: 8px 25px;
+  border-radius: 50px;
+  color: #D4AF37;
+  font-weight: 700;
+  font-size: .9rem;
+  transition: all 0.3s ease;
+  margin-left: 10px;
+}
+
+.btn-logout-custom:hover {
+  background: #D4AF37;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+/* للشاشات الصغيرة */
+@media (max-width: 991px) {
+  .btn-profile-custom,
+  .btn-logout-custom {
+    width: 100%;
+    margin: 5px 0;
+    justify-content: center;
+  }
+  
+  .btn-logout-custom {
+    margin-left: 0;
+  }
+}

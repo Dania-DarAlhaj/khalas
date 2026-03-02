@@ -4,17 +4,30 @@ import '../style/HomePage.css';
 import { motion } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import { useState } from 'react';
+
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+  
   const handleLogout = () => {
-  sessionStorage.clear(); 
-  setIsLoggedIn(false);
-  navigate("/login");
-};
+    sessionStorage.removeItem("userId_"); // Remove the userId_ from session
+    sessionStorage.removeItem("userName"); // Also remove userName if you store it
+    setIsLoggedIn(false);
+    navigate("/login");
+  };
+
+  const handleProfile = () => {
+    navigate("/UserProfile"); // Changed to UserProfile as per your request
+  };
 
   useEffect(() => {
-     setIsLoggedIn(!!sessionStorage.getItem("currentEmail"));
-     
+    // Check if user is logged in by looking for userId_ in sessionStorage
+    const userId = sessionStorage.getItem("userId_");
+    const name = sessionStorage.getItem("userName");
+    
+    setIsLoggedIn(!!userId); // Convert to boolean - true if userId_ exists
+    if (name) setUserName(name);
+    
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;500;600;700&display=swap';
     fontLink.rel = 'stylesheet';
@@ -22,50 +35,54 @@ export default function HomePage() {
 
     const handleScroll = () => {
       const navbar = document.querySelector('.wps-navbar');
-      if (!navbar) return; // guard in case element isn't present yet
+      if (!navbar) return;
       if (window.scrollY > 50) {
         navbar.classList.add('navbar-scrolled');
       } else {
         navbar.classList.remove('navbar-scrolled');
       }
-      
     };
 
     window.addEventListener('scroll', handleScroll);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      
     };
   }, []);
-const navigate = useNavigate();
-
+  
+  const navigate = useNavigate();
 
   const services = [
-
-      { 
-    title: 'Wedding Venues', 
-    desc: 'Discover exquisite halls with premium amenities and breathtaking ambiance for your perfect celebration.', 
-    icon: '🏛️',
-    path: '/VenuesPage'
-  },
-    { title: 'Music & Entertainment',
-       desc: 'World-class DJs and live orchestras to create unforgettable musical experiences.', 
-       icon: '🎧' ,
-      path: '/DJ' },
-    { title: 'Photography & Videography',
-       desc: 'Award-winning photographers capturing every precious moment with artistic excellence.',
-        icon: '📸' ,
-        path: '/PhotographersPage'
-      },
-    { title: 'Luxury Cakes',
-       desc: 'Bespoke wedding cakes crafted by master pastry chefs with premium ingredients.',
-        icon: '🍰' ,
-       path: '/CakePage'},
-    { title: 'Floral Design',
-       desc: 'Stunning floral arrangements and sophisticated venue styling by expert designers.',
-        icon: '🌹',
-        path: '/DecorPage' },
+    { 
+      title: 'Wedding Venues', 
+      desc: 'Discover exquisite halls with premium amenities and breathtaking ambiance for your perfect celebration.', 
+      icon: '🏛️',
+      path: '/VenuesPage'
+    },
+    { 
+      title: 'DJ',
+      desc: 'World-class DJs and live orchestras to create unforgettable musical experiences.', 
+      icon: '🎧',
+      path: '/DJ' 
+    },
+    { 
+      title: 'Photography',
+      desc: 'Award-winning photographers capturing every precious moment with artistic excellence.',
+      icon: '📸',
+      path: '/PhotographersPage'
+    },
+    { 
+      title: 'Cakes',
+      desc: 'Bespoke wedding cakes crafted by master pastry chefs with premium ingredients.',
+      icon: '🍰',
+      path: '/CakePage'
+    },
+    { 
+      title: 'Decoration',
+      desc: 'Stunning floral arrangements and sophisticated venue styling by expert designers.',
+      icon: '🌹',
+      path: '/DecorPage' 
+    },
   ];
 
   const packages = [
@@ -159,30 +176,100 @@ const navigate = useNavigate();
               <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li>
               <li className="nav-item"><a className="nav-link" href="#services">Services</a></li>
               <li className="nav-item"><a className="nav-link" href="#packages">Packages</a></li>
-              <li className="nav-item"><a className="nav-link" href="#how-it-works">How It Works</a></li>
-              <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
-          
-              {/* زر Login / Logout */}
-              <li className="nav-item">
-                <button
-                  className="btn btn-primary-custom"
-                  onClick={isLoggedIn ? handleLogout : () => navigate("/login")}
-                  style={{
-                    color: '#000',
-                    fontWeight: '900',
-                    fontSize: '.8rem',
-                    textShadow: '0 2px 4px rgba(255,255,255,0.5)',
-                    letterSpacing: '0.5px'
-                  }}
-                >
-                  {isLoggedIn ? "Logout" : "Log in"}
-                </button>
-              </li>
+              
+              {/* User Actions - Profile & Login/Logout */}
+              {isLoggedIn ? (
+                <>
+                  {/* Profile Button */}
+                  <li className="nav-item">
+                    <button
+                      className="btn btn-profile-custom"
+                      onClick={handleProfile}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'linear-gradient(135deg, #8B7355 0%, #D4AF37 100%)',
+                        border: 'none',
+                        padding: '8px 20px',
+                        borderRadius: '50px',
+                        color: '#fff',
+                        fontWeight: '600',
+                        fontSize: '.9rem',
+                        marginRight: '10px',
+                        boxShadow: '0 4px 15px rgba(139, 115, 85, 0.3)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(212, 175, 55, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(139, 115, 85, 0.3)';
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>👤</span>
+                      <span>{userName || 'Profile'}</span>
+                    </button>
+                  </li>
+                  
+                  {/* Logout Button */}
+                  <li className="nav-item">
+                    <button
+                      className="btn btn-logout-custom"
+                      onClick={handleLogout}
+                      style={{
+                        background: 'transparent',
+                        border: '2px solid #D4AF37',
+                        padding: '8px 25px',
+                        borderRadius: '50px',
+                        color: '#D4AF37',
+                        fontWeight: '700',
+                        fontSize: '.9rem',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#D4AF37';
+                        e.currentTarget.style.color = '#fff';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#D4AF37';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              ) : (
+                /* Login Button */
+                <li className="nav-item">
+                  <button
+                    className="btn btn-primary-custom"
+                    onClick={() => navigate("/login")}
+                    style={{
+                      color: '#000',
+                      fontWeight: '900',
+                      fontSize: '.8rem',
+                      textShadow: '0 2px 4px rgba(255,255,255,0.5)',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    Log in
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </div>
       </nav>
 
+      {/* Rest of the component remains the same */}
       {/* Hero */}
       <header id="home" className="hero">
         <div className="container">
@@ -289,15 +376,14 @@ const navigate = useNavigate();
                 className="col-md-4"
               >
                 <div
-  className="service-card"
-  style={{ cursor: service.path ? 'pointer' : 'default' }}
-  onClick={() => {
-    if (service.path) {
-      navigate(service.path);
-    }
-  }}
->
-
+                  className="service-card"
+                  style={{ cursor: service.path ? 'pointer' : 'default' }}
+                  onClick={() => {
+                    if (service.path) {
+                      navigate(service.path);
+                    }
+                  }}
+                >
                   <div className="service-icon">{service.icon}</div>
                   <h4 className="service-title">{service.title}</h4>
                   <p className="service-desc">{service.desc}</p>

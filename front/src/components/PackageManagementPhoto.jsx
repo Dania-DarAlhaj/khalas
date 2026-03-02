@@ -5,33 +5,56 @@ import "../style/PackageManagementPhoto.css";
 
 export default function PackageManagementPhoto() {
   const navigate = useNavigate();
-  const userId = sessionStorage.getItem("userId_");
+  const userId = sessionStorage.getItem("userId_") || sessionStorage.getItem("ownerId_");
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [searchName, setSearchName] = useState("");
   const [searchPrice, setSearchPrice] = useState("");
 
   const fetchPackages = async () => {
+    if (!userId) {
+      console.warn("PackageManagementPhoto: No userId found in sessionStorage");
+      setError("User not logged in. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setError(null);
+      console.log("Fetching photography packages for userId:", userId);
+      
       const { data, error } = await supabase
         .from("photography")
         .select("*")
         .eq("user_id", userId);
 
-      if (error) throw error;
-      setPackages(data);
+      if (error) {
+        console.error("Supabase error fetching photography packages:", error);
+        setError("Failed to load packages: " + (error.message || "Unknown error"));
+        throw error;
+      }
+      
+      console.log("Photography packages fetched:", data);
+      setPackages(data || []);
     } catch (err) {
       console.error("Error fetching photography packages:", err);
+      setError("Error loading packages. Check console for details.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (userId) fetchPackages();
+    if (userId) {
+      fetchPackages();
+    } else {
+      setLoading(false);
+      setError("User ID not found in session. Please log in again.");
+    }
   }, [userId]);
 
   const handleLogout = () => {
@@ -110,7 +133,7 @@ export default function PackageManagementPhoto() {
         <div className="navbar-right">
           <button onClick={() => navigate("/PhotographersPageOwnerhome")}>👤 Profile</button>
           <button onClick={() => navigate("/PackageManagementPhoto")}>📦 Package Management</button>
-          <button onClick={() => navigate("/VisitRequestsPhoto")}>📋 Visit Requests</button>
+     
           <button onClick={() => navigate("/BookingRequestsphoto")}>📅 Booking Requests</button>
           <button onClick={() => navigate("/AddPackagephoto")}>➕ Add Package</button>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
@@ -120,6 +143,18 @@ export default function PackageManagementPhoto() {
       {/* Main Content */}
       <div className="package-container">
         <h2>My Photography Packages 📸</h2>
+        
+        {error && (
+          <div style={{
+            padding: "10px",
+            backgroundColor: "#ffebee",
+            color: "#c62828",
+            marginBottom: "20px",
+            borderRadius: "4px"
+          }}>
+            {error}
+          </div>
+        )}
         
         {/* Search Bar */}
         <div className="search-container">
@@ -140,8 +175,15 @@ export default function PackageManagementPhoto() {
         {/* Packages Table */}
         {loading ? (
           <p>Loading packages...</p>
+        ) : !userId ? (
+          <div style={{ color: "#d32f2f", padding: "20px" }}>
+            <p>No user ID found. Please log in again.</p>
+            <button onClick={() => navigate("/login")} style={{ padding: "10px 20px", cursor: "pointer" }}>
+              Go to Login
+            </button>
+          </div>
         ) : filteredPackages.length === 0 ? (
-          <p>No packages found.</p>
+          <p>{packages.length === 0 ? "No packages created yet. " : "No packages match your search."}</p>
         ) : (
           <div className="package-table-container">
             <table className="package-table">

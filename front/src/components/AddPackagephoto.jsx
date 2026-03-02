@@ -24,21 +24,7 @@ export default function AddPackageForm() {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  // اختيار الصورة
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setFormValues((prev) => ({ ...prev, imgname: file.name }));
-      
-      // عرض المعاينة
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  
 
   // حفظ الفورم
   const handleSubmit = async (e) => {
@@ -54,7 +40,7 @@ export default function AddPackageForm() {
           numberofphoto: Number(formValues.numberofphoto),
           numberofvidio: Number(formValues.numberofvidio),
           numberofeditedphoto: Number(formValues.numberofeditedphoto),
-          imgurl: formValues.imgname,
+          imgurl: "formValues.imgname",
         },
       ]);
 
@@ -100,7 +86,7 @@ export default function AddPackageForm() {
         <div className="navbar-right">
           <button onClick={() => navigate("/PhotographersPageOwnerhome")}>👤 Profile</button>
           <button onClick={() => navigate("/PackageManagementPhoto")}>📦 Package Management</button>
-          <button onClick={() => navigate("/VisitRequestsPhoto")}>📋 Visit Requests</button>
+         
           <button onClick={() => navigate("/BookingRequestsphoto")}>📅 Booking Requests</button>
           <button className="active-nav-btn" onClick={() => navigate("/AddPackagephoto")}>➕ Add Package</button>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
@@ -185,55 +171,8 @@ export default function AddPackageForm() {
                 />
               </div>
 
-              {/* Image Upload */}
-              <div className="form-group full-width">
-                <label>Image:</label>
-                <div className="image-upload-section">
-                  <div className="image-preview-area">
-                    {previewUrl ? (
-                      <div className="image-preview">
-                        <img src={previewUrl} alt="Preview" />
-                        <button 
-                          type="button" 
-                          className="remove-image"
-                          onClick={() => {
-                            setPreviewUrl("");
-                            setImageFile(null);
-                            setFormValues(prev => ({ ...prev, imgname: "" }));
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="upload-placeholder">
-                        <div className="upload-icon">📷</div>
-                        <p>No image selected</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="file-input-wrapper">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="file-input"
-                      id="image-upload"
-                      required={!previewUrl}
-                    />
-                    <label htmlFor="image-upload" className="upload-btn">
-                      Choose Image
-                    </label>
-                    
-                    {formValues.imgname && (
-                      <div className="selected-file">
-                        <span>Selected: {formValues.imgname}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              
+                 
             </div>
 
             {/* Submit Button */}

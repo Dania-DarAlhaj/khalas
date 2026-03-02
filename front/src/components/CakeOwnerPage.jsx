@@ -236,59 +236,6 @@ export default function CakeOwnerPage() {
         </div>
       </form>
 
-      {/* === CAKE CARDS === */}
-      {cakes.map(cake => (
-        <div key={cake.id} className="cake-card">
-          <label>
-            <span>Cake Name</span>
-            <input
-              name="cake_name"
-              value={cakeEdits[cake.id]?.cake_name || ""}
-              onChange={(e) => handleCakeChange(cake.id, e)}
-              disabled={!editMode}
-            />
-          </label>
-
-          <label>
-            <span>Price</span>
-            <input
-              name="price"
-              type="number"
-              value={cakeEdits[cake.id]?.price || ""}
-              onChange={(e) => handleCakeChange(cake.id, e)}
-              disabled={!editMode}
-            />
-          </label>
-
-          <div className="cake-images">
-            {cakeImages[cake.id]?.map((_, index) => (
-              <div key={index} className="cake-image-wrapper">
-                <img
-                  src={`/img/cake/${formatCakeName(cake.imgurl)}`}
-                  alt={`${cake.cake_name} ${index + 1}`}
-                />
-
-                {editMode && cakeImages[cake.id]?.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(cake.id, index)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
-
-            {editMode && (
-              <input
-                type="file"
-                multiple
-                onChange={(e) => handleAddImages(cake.id, e)}
-              />
-            )}
-          </div>
-        </div>
-      ))}
 
       {/* === ACTION BUTTONS === */}
       <button className="edit-btn" onClick={() => setEditMode(!editMode)}>

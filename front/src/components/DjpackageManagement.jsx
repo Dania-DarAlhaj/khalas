@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import "bootstrap/dist/css/bootstrap.min.css";
 import "../style/DjpackageManagement.css";
 
 export default function DjpackageManagement() {
+  const navigate = useNavigate();
   const userId = Number(sessionStorage.getItem("userId_"));
   const [djPackages, setDjPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,12 @@ export default function DjpackageManagement() {
     hours: "",
     describtion: "",
   });
+
+  // Logout function
+  const handleLogout = () => {
+    sessionStorage.clear();
+    navigate("/login");
+  };
 
   useEffect(() => {
     const fetchDjPackages = async () => {
@@ -114,7 +121,12 @@ export default function DjpackageManagement() {
 
     const { data, error } = await supabase
       .from("dj")
-      .insert([{ ...newPackage, price: Number(newPackage.price), hours: Number(newPackage.hours), owner_id: ownerId }])
+      .insert([{ 
+        ...newPackage, 
+        price: Number(newPackage.price), 
+        hours: Number(newPackage.hours), 
+        owner_id: ownerId 
+      }])
       .select();
 
     if (error) return alert("Failed to add package: " + error.message);
@@ -125,134 +137,200 @@ export default function DjpackageManagement() {
   };
 
   return (
-    <div className="container">
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg">
-        <div className="container-fluid">
-          <a className="navbar-brand" href="#">🎧 DJ Management</a>
-          <div className="collapse navbar-collapse">
-            <ul className="navbar-nav ms-auto">
-              <li className="nav-item">
-                <button className="btn btn-success" onClick={() => setShowModal(true)}>Add Package</button>
-              </li>
-            </ul>
+    <div className="dj-management-page">
+      {/* NAVBAR */}
+      <nav className="owner-navbar">
+        <div className="navbar-left">
+          <div className="navbar-logo">
+            <span className="logo-text">Wedding Planning System</span>
           </div>
+        </div>
+        
+        <div className="navbar-right">
+          <button className="active">📦 Package Management</button>
+          <button onClick={() => setShowModal(true)}>➕ Add Package</button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </nav>
 
-      <h2>🎧 My DJ Packages</h2>
+      {/* MAIN CONTENT */}
+      <div className="packages-container">
+        <div className="packages-header">
+          <h2 className="packages-title">DJ Package Management</h2>
+          
+          {/* Search Section - مرتبة جنب بعض */}
+          <div className="search-section">
+            <div className="search-box">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search by name..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                className="search-input"
+              />
+            </div>
+            <div className="search-box">
+              <span className="search-icon">💰</span>
+              <input
+                type="number"
+                placeholder="price"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          </div>
+        </div>
 
-      <div className="mb-3 mt-3">
-        <input
-          type="text"
-          placeholder="Search by name"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          className="form-control"
-        />
-        <input
-          type="number"
-          placeholder="Max price"
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-          className="form-control mt-2"
-        />
+        {/* Packages Table */}
+        <div className="table-wrapper">
+          <table className="packages-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Package Name</th>
+                <th>Price</th>
+                <th>Hours</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPackages.map((dj) => (
+                <tr key={dj.id}>
+                  <td>#{dj.id}</td>
+                  <td>
+                    {editingId === dj.id ? (
+                      <input 
+                        type="text" 
+                        className="edit-input" 
+                        value={editData.packagename}
+                        onChange={(e) => setEditData({ ...editData, packagename: e.target.value })} 
+                      />
+                    ) : dj.packagename}
+                  </td>
+                  <td>
+                    {editingId === dj.id ? (
+                      <input 
+                        type="number" 
+                        className="edit-input" 
+                        value={editData.price}
+                        onChange={(e) => setEditData({ ...editData, price: Number(e.target.value) })} 
+                      />
+                    ) : (
+                      <span className="price-value">${dj.price}</span>
+                    )}
+                  </td>
+                  <td>
+                    {editingId === dj.id ? (
+                      <input 
+                        type="number" 
+                        className="edit-input" 
+                        value={editData.hours}
+                        onChange={(e) => setEditData({ ...editData, hours: Number(e.target.value) })} 
+                      />
+                    ) : (
+                      <span className="hours-value">{dj.hours}h</span>
+                    )}
+                  </td>
+                  <td>
+                    {editingId === dj.id ? (
+                      <input 
+                        type="text" 
+                        className="edit-input" 
+                        value={editData.describtion}
+                        onChange={(e) => setEditData({ ...editData, describtion: e.target.value })} 
+                      />
+                    ) : (
+                      <span className="description-text">{dj.describtion || "—"}</span>
+                    )}
+                  </td>
+                  <td>
+                    {editingId === dj.id ? (
+                      <div className="action-group">
+                        <button className="action-btn save-btn" onClick={() => handleSave(dj.id)} title="Save">
+                          ✓
+                        </button>
+                        <button className="action-btn cancel-btn" onClick={handleCancel} title="Cancel">
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="action-group">
+                        <button className="action-btn edit-btn" onClick={() => handleEditClick(dj)} title="Edit">
+                          ✎
+                        </button>
+                        <button className="action-btn delete-btn" onClick={() => handleDelete(dj.id)} title="Delete">
+                          🗑
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {filteredPackages.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="no-data">
+                    No packages found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {/* جدول الباكجات */}
-      <table className="table table-bordered">
-        <thead className="table-dark">
-          <tr>
-            <th>ID</th>
-            <th>Package Name</th>
-            <th>Price</th>
-            <th>Hours</th>
-            <th>Description</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredPackages.map((dj) => (
-            <tr key={dj.id}>
-              <td>{dj.id}</td>
-              <td>
-                {editingId === dj.id ? (
-                  <input type="text" className="form-control" value={editData.packagename}
-                    onChange={(e) => setEditData({ ...editData, packagename: e.target.value })} />
-                ) : dj.packagename}
-              </td>
-              <td>
-                {editingId === dj.id ? (
-                  <input type="number" className="form-control" value={editData.price}
-                    onChange={(e) => setEditData({ ...editData, price: Number(e.target.value) })} />
-                ) : dj.price}
-              </td>
-              <td>
-                {editingId === dj.id ? (
-                  <input type="number" className="form-control" value={editData.hours}
-                    onChange={(e) => setEditData({ ...editData, hours: Number(e.target.value) })} />
-                ) : dj.hours}
-              </td>
-              <td>
-                {editingId === dj.id ? (
-                  <input type="text" className="form-control" value={editData.describtion}
-                    onChange={(e) => setEditData({ ...editData, describtion: e.target.value })} />
-                ) : dj.describtion}
-              </td>
-              <td>
-                {editingId === dj.id ? (
-                  <>
-                    <button className="btn btn-success btn-sm me-1" onClick={() => handleSave(dj.id)}>Save</button>
-                    <button className="btn btn-secondary btn-sm" onClick={handleCancel}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <button className="btn btn-primary btn-sm me-1" onClick={() => handleEditClick(dj)}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(dj.id)}>Delete</button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
 
       {/* Modal Add Package */}
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content-custom">
-            <h3>Add New DJ Package</h3>
-            <input
-              type="text"
-              placeholder="Package Name"
-              className="form-control mb-2"
-              value={newPackage.packagename}
-              onChange={(e) => setNewPackage({ ...newPackage, packagename: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Price"
-              className="form-control mb-2"
-              value={newPackage.price}
-              onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Hours"
-              className="form-control mb-2"
-              value={newPackage.hours}
-              onChange={(e) => setNewPackage({ ...newPackage, hours: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Description"
-              className="form-control mb-3"
-              value={newPackage.describtion}
-              onChange={(e) => setNewPackage({ ...newPackage, describtion: e.target.value })}
-            />
-            <div className="text-end">
-              <button className="btn btn-success me-2" onClick={handleAddPackage}>Add</button>
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Add New DJ Package</h3>
+            <div className="modal-body">
+              <div className="modal-input-group">
+                <label>Package Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Premium Wedding Package"
+                  className="modal-input"
+                  value={newPackage.packagename}
+                  onChange={(e) => setNewPackage({ ...newPackage, packagename: e.target.value })}
+                />
+              </div>
+              <div className="modal-input-group">
+                <label>Price ($)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  className="modal-input"
+                  value={newPackage.price}
+                  onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
+                />
+              </div>
+              <div className="modal-input-group">
+                <label>Hours</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 4"
+                  className="modal-input"
+                  value={newPackage.hours}
+                  onChange={(e) => setNewPackage({ ...newPackage, hours: e.target.value })}
+                />
+              </div>
+              <div className="modal-input-group">
+                <label>Description</label>
+                <textarea
+                  placeholder="Describe your package..."
+                  className="modal-textarea"
+                  value={newPackage.describtion}
+                  onChange={(e) => setNewPackage({ ...newPackage, describtion: e.target.value })}
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="modal-btn save-btn" onClick={handleAddPackage}>Add Package</button>
             </div>
           </div>
         </div>

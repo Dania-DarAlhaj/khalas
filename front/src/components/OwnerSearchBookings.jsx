@@ -151,7 +151,7 @@ export default function ReservationsTable() {
       setEditReservationData({
         price: item.price,
         status: item.status,
-        description: item.description
+        describtion: item.description
       });
     } else {
       setEditBookingData({
@@ -160,7 +160,7 @@ export default function ReservationsTable() {
         city: item.city,
         final_price: item.final_price,
         booking_date: item.booking_date,
-        description: item.description
+        describtion: item.description
       });
     }
 
@@ -176,7 +176,7 @@ export default function ReservationsTable() {
           .update({
             price: parseFloat(editReservationData.price),
             status: editReservationData.status,
-            description: editReservationData.description
+            describtion: editReservationData.description
           })
           .eq("reservations_id", currentEditId);
 
@@ -191,7 +191,7 @@ export default function ReservationsTable() {
             ...r, 
             price: parseFloat(editReservationData.price),
             status: editReservationData.status,
-            description: editReservationData.description
+            describtion: editReservationData.description
           } : r)
         );
         
@@ -206,7 +206,7 @@ export default function ReservationsTable() {
             city: editBookingData.city,
             final_price: parseFloat(editBookingData.final_price),
             booking_date: editBookingData.booking_date,
-            description: editBookingData.description
+            describtion: editBookingData.description
           })
           .eq("booking_id", currentEditId);
 
@@ -224,7 +224,7 @@ export default function ReservationsTable() {
             city: editBookingData.city,
             final_price: parseFloat(editBookingData.final_price),
             booking_date: editBookingData.booking_date,
-            description: editBookingData.description
+            describtion: editBookingData.description
           } : b)
         );
         
@@ -372,11 +372,11 @@ export default function ReservationsTable() {
               <table className="booking-table">
                 <thead>
                   <tr>
-                    <th>Reservation ID</th>
-                    <th>User ID</th>
+                 
                     <th>Reservation Date</th>
                     <th>Price</th>
                     <th>Status</th>
+                  
                     <th>Description</th>
                     <th>Created At</th>
                     <th>Actions</th>
@@ -385,16 +385,16 @@ export default function ReservationsTable() {
                 <tbody>
                   {reservations.map(r => (
                     <tr key={r.reservations_id}>
-                      <td>{r.reservations_id}</td>
-                      <td>{r.user_id}</td>
+                     
                       <td>{r.reservation_date}</td>
-                      <td>${r.price}</td>
+                      <td>{r.price}</td>
                       <td>
                         <span className={`status-badge ${r.status ? 'active' : 'pending'}`}>
                           {r.status ? "Confirmed" : "Pending"}
                         </span>
                       </td>
-                      <td className="description-cell">{r.description || "No description"}</td>
+                     
+                      <td className="description-cell">{r.describtion }</td>
                       <td>{new Date(r.created_at || r.reservation_date).toLocaleDateString()}</td>
                       <td>
                         <div className="action-buttons">
@@ -434,8 +434,7 @@ export default function ReservationsTable() {
               <table className="booking-table">
                 <thead>
                   <tr>
-                    <th>Booking ID</th>
-                    <th>Hall ID</th>
+                  
                     <th>User Name</th>
                     <th>Phone</th>
                     <th>City</th>
@@ -448,8 +447,7 @@ export default function ReservationsTable() {
                 <tbody>
                   {bookingsByOwner.map(b => (
                     <tr key={b.booking_id}>
-                      <td>{b.booking_id}</td>
-                      <td>{b.hall_id}</td>
+                 
                       <td>{b.user_name}</td>
                       <td>{b.user_phone}</td>
                       <td>{b.city}</td>

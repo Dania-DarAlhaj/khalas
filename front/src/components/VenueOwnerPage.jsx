@@ -291,11 +291,11 @@ const formatHallName = (name) =>
           </label>
 
          <div className="hall-images">
-  {hallImages[hall.hall_id].map((_, index) => (
+         {hallImages[hall.hall_id]?.map((img, index) => (
     <div key={index} className="hall-image-wrapper">
       <img
-        src={`/img/hall/${formatHallName(hall.imgurl)}`}
-        alt={`${hall.imgurl} ${index + 1}`}
+        src={`/img/hall/${img}`}
+        alt={`hall ${index}`}
       />
 
       {editMode && hallImages[hall.hall_id].length > 1 && (
@@ -309,13 +309,13 @@ const formatHallName = (name) =>
     </div>
   ))}
 
-            {editMode && (
-              <input 
-                type="file" 
-                multiple 
-                onChange={(e) => handleAddImages(hall.hall_id, e)} 
-              />
-            )}
+          {editMode && (
+    <input 
+      type="file" 
+      multiple 
+      onChange={(e) => handleAddImages(hall.hall_id, e)} 
+    />
+  )}
           </div>
         </div>
       ))}

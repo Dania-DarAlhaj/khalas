@@ -50,7 +50,7 @@ export default function PhotographersPageOwnerhome() {
         .update({
           description: formData.description,
         })
-        .eq("owner_id", ownerId);
+        .eq("user_id", userId);
 
       setUserData({ ...userData, ...formData });
       setOwnerData({ ...ownerData, description: formData.description });
@@ -67,29 +67,42 @@ export default function PhotographersPageOwnerhome() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const { data: user, error: userError } = await supabase
           .from("users")
           .select("email, name, phone, city")
           .eq("id", userId)
           .single();
-        if (userError) throw userError;
+        
+        if (userError) {
+          console.error("User fetch error:", userError);
+          throw userError;
+        }
 
         const { data: owner, error: ownerError } = await supabase
           .from("owners")
           .select("rate, rating_count, description")
-          .eq("owner_id", ownerId)
+          .eq("user_id", userId)
           .single();
-        if (ownerError) throw ownerError;
+        
+        // Owner data is optional
+        if (ownerError) {
+          console.warn("Owner data not found, continuing without it:", ownerError);
+        }
 
         setUserData(user);
-        setOwnerData(owner);
+        setOwnerData(owner || { rate: 0, rating_count: 0, description: "" });
 
         setFormData({
           name: user.name || "",
           phone: user.phone || "",
           city: user.city || "",
-          description: owner.description || "",
+          description: (owner?.description) || "",
         });
       } catch (err) {
         console.error("Profile fetch error:", err);
@@ -98,8 +111,8 @@ export default function PhotographersPageOwnerhome() {
       }
     };
 
-    if (userId && ownerId) fetchProfileData();
-  }, [userId, ownerId]);
+    if (userId) fetchProfileData();
+  }, [userId]);
 
   return (
     <div className="photographer-owner-page">
@@ -114,7 +127,7 @@ export default function PhotographersPageOwnerhome() {
         <div className="navbar-right">
           <button onClick={() => navigate("/PhotographersPageOwnerhome")}>👤 Profile</button>
           <button onClick={() => navigate("/PackageManagementPhoto")}>📦 Package Management</button>
-          <button onClick={() => navigate("/VisitRequestsPhoto")}>📋 Visit Requests</button>
+
           <button onClick={() => navigate("/BookingRequestsphoto")}>📅 Booking Requests</button>
           <button onClick={() => navigate("/AddPackagephoto")}>➕ Add Package</button>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>

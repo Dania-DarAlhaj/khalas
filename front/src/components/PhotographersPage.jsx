@@ -8,16 +8,13 @@ import { useNavigate } from "react-router-dom";
 export default function PhotographyPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState('all');
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([
     { type: 'bot', text: 'Welcome! I\'m here to help you find the perfect wedding photographer. How can I assist you today?' }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef(null);
-  
 
     const [photographers, setPhotographers] = useState([]);
     const [loadingPhotographers, setLoadingPhotographers] = useState(true);
@@ -75,31 +72,34 @@ export default function PhotographyPage() {
             if (imgPath.startsWith('http')) return imgPath;
 
             const bucketsToTry = ['photography', 'photogra', 'images', 'public', 'img'];
-           
-
-
             return '/img/DJ/djj1.jpg';
           };
 
-       const items = await Promise.all(owners.map(async owner => {
+  const items = await Promise.all(owners.map(async owner => {
   const user = usersById[owner.user_id] || {};
   const photo = photosByUser[owner.user_id] || {};
   const image = await resolveImageUrl(photo.imgurl);
+  const price = Number(photo.price) || 0;
+
+  let priceRange = 'low';
+  if (price < 1500) priceRange = 'low';
+  else if (price >= 1500 && price <= 2500) priceRange = 'medium';
+  else priceRange = 'high';
 
   return {
     id: photo.id || owner.owner_id,
-    owner_id: owner.owner_id, // 🔥 لازم تكون موجودة هيك
+    owner_id: owner.owner_id,
     name: user.name || 'Photographer',
     location: user.city || 'Unknown',
     rating: Number(owner.rate) || 0,
     reviews: 0,
-    description: owner.description || 'Professional photography services',
+    description: owner.description ,
     image,
-    price: Number(photo.price) || 0,
+    price,
+    priceRange, // ← هنا نضيف الخاصية
     services: []
   };
 }));
-
 
           setPhotographers(items);
         } catch (err) {
@@ -109,11 +109,10 @@ export default function PhotographyPage() {
           setLoadingPhotographers(false);
         }
       };
-
       fetchPhotographers();
     }, []);
 
-  const locations = ['all', 'Ramallah', 'Nablus', 'Bethlehem', 'Hebron'];
+  const locations = ['all', 'Ramallah', 'Nablus', 'Bethlehem', 'Hebron', 'Jenin', 'Tulkarm', 'Qalqilya', 'Salfit', 'Jericho', 'Tubas'];
   const priceRanges = [
     { value: 'all', label: 'All Prices' },
     { value: 'low', label: 'Under 1500 ILS' },
@@ -121,50 +120,18 @@ export default function PhotographyPage() {
     { value: 'high', label: 'Over 2500 ILS' }
   ];
 
-  const filteredPhotographers = photographers.filter(photographer => {
-    const matchesSearch = photographer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesLocation = selectedLocation === 'all' || photographer.location === selectedLocation;
-    
-    const matchesPrice = selectedPriceRange === 'all' || photographer.priceRange === selectedPriceRange;
-    
-    return matchesSearch && matchesLocation && matchesPrice;
-  });
+const filteredPhotographers = photographers.filter(photographer => {
+  const matchesSearch = photographer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        photographer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        photographer.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim() === '') return;
+  const matchesLocation = selectedLocation === 'all' || photographer.location === selectedLocation;
+  
+  const matchesPrice = selectedPriceRange === 'all' || photographer.priceRange === selectedPriceRange;
 
-    const userMessage = { type: 'user', text: inputMessage };
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+  return matchesSearch && matchesLocation && matchesPrice;
+});
 
-    setTimeout(() => {
-      const botResponse = generateBotResponse(inputMessage);
-      setMessages(prev => [...prev, { type: 'bot', text: botResponse }]);
-    }, 1000);
-  };
-
-  const generateBotResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('location') || lowerMessage.includes('where')) {
-      return 'We have excellent photographers in Ramallah, Nablus, Bethlehem, and Hebron. Which location would you prefer?';
-    } else if (lowerMessage.includes('book') || lowerMessage.includes('appointment') || lowerMessage.includes('reserve')) {
-      return 'Great! To book a photographer, please call us at 02-1234567 or leave your phone number and we will arrange a consultation appointment for you.';
-    } else if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('budget')) {
-      return 'Photography prices range from 1200 to 3000 ILS depending on the package and services required. You can filter results by price to find what suits your budget.';
-    } else if (lowerMessage.includes('service') || lowerMessage.includes('package') || lowerMessage.includes('offer')) {
-      return 'We offer various services including: Photography, Videography, Drone Shots, Luxury Album Design, and Prints. Which service interests you?';
-    } else if (lowerMessage.includes('rating') || lowerMessage.includes('review')) {
-      return 'All our photographers have excellent ratings from previous clients. You can see ratings and reviews on each photographer card. Would you like recommendations for top-rated photographers?';
-    } else if (lowerMessage.includes('thank')) {
-      return 'You\'re welcome! Happy to serve you. Don\'t hesitate to ask any other questions. We\'re here to make your wedding day perfect! 💍✨';
-    } else {
-      return 'Thank you for contacting us! I can help you with:\n• Finding photographers by location\n• Information about prices and packages\n• Booking consultation appointments\n• Photographer recommendations\n\nWhat would you like to know?';
-    }
-  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -422,12 +389,7 @@ export default function PhotographyPage() {
         </div>
       </footer>
 
-      {/* Chatbot */}
-      <div className="chatbot-container">
-   
-
-       
-      </div>
+    
     </div>
   );
 }

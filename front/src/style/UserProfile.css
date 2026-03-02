@@ -1,0 +1,143 @@
+/* Add to existing UserProfile.css */
+
+/* Edit Mode Styles */
+.edit-input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.edit-input.error {
+  border-color: #dc3545;
+}
+
+/* Action Buttons */
+.btn-edit-profile {
+  background: linear-gradient(135deg, #8B7355 0%, #D4AF37 100%);
+  border: none;
+  padding: 12px 30px;
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-profile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+.btn-save-profile {
+  background: #28a745;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-save-profile:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+.btn-save-profile:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel-edit {
+  background: transparent;
+  border: 2px solid #6c757d;
+  padding: 12px 30px;
+  border-radius: 50px;
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel-edit:hover:not(:disabled) {
+  background: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-cancel-edit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-go-home {
+  background: transparent;
+  border: 2px solid #D4AF37;
+  padding: 12px 30px;
+  border-radius: 50px;
+  color: #D4AF37;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-go-home:hover {
+  background: #D4AF37;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Alert Messages */
+.alert {
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 30px;
+  border: none;
+  font-weight: 500;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+  }
+  
+  .btn-edit-profile,
+  .btn-save-profile,
+  .btn-cancel-edit,
+  .btn-go-home {
+    width: 100%;
+    margin: 5px 0;
+  }
+}

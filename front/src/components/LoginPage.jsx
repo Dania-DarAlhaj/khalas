@@ -76,16 +76,22 @@ export default function LoginPage() {
         } 
         else if (owner.owner_type === "DJ") {
           sessionStorage.setItem("userId_", user.id);
-          navigate("/DJowner");
+          navigate("/DjpackageManagement");
         } 
         else if (owner.owner_type === "cake") {
           sessionStorage.setItem("ownerId_", user.id);
           navigate("/CakeOwnerPage", { state: { userId: user.id } });
           
         }
-        else if (owner.owner_type === "photography") {  
+ else if (owner.owner_type === "photography") {  
+          sessionStorage.setItem("userId_", user.id);
+          sessionStorage.setItem("idowner",owner.owner_id);
+          sessionStorage.setItem("currentEmail", email);
+          navigate("/PhotographersPageOwnerhome", { state: { userId: user.id } });
+        }
+else if (owner.owner_type === "decoration") {
   sessionStorage.setItem("ownerId_", user.id);
-  navigate("/PhotographersPageOwnerhome", { state: { userId: user.id } });
+  navigate("/DecorationOwnerPage", { state: { userId: user.id } });
 }
         else {
           alert("Unknown owner type");
