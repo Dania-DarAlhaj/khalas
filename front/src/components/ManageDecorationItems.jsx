@@ -8,9 +8,12 @@ export default function OwnerDecorationPanel() {
   const [ownerId, setOwnerId] = useState(null);
   const [decorations, setDecorations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [newType, setNewType] = useState("");
   const [newImage, setNewImage] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  
   const userId = sessionStorage.getItem("ownerId_"); // contains user ID
 
   // Logout
@@ -84,109 +87,213 @@ export default function OwnerDecorationPanel() {
   // Add new decoration (only store image name)
   const handleAddItem = async (e) => {
     e.preventDefault();
-    if (!newType || !newImage) return alert("Please fill all fields!");
+    if (!newType || !newImage) {
+      alert("Please fill all fields!");
+      return;
+    }
 
     const fileName = newImage.name; // Only store the filename
 
     try {
       const { data, error } = await supabase
         .from("decoration_item")
-        .insert({ owner_id: ownerId, decoration_type: newType, imgname: fileName });
+        .insert([{ 
+          owner_id: ownerId, 
+          decoration_type: newType, 
+          imgname: fileName 
+        }])
+        .select();
 
       if (error) throw error;
 
-      if (data?.[0]) setDecorations((prev) => [...prev, data[0]]);
+      if (data?.[0]) {
+        setDecorations((prev) => [...prev, data[0]]);
+      }
+      
       setNewType("");
       setNewImage(null);
+      setShowModal(false);
     } catch (err) {
       console.error("Error adding decoration:", err);
       alert("Error adding decoration!");
     }
   };
 
+  // Filter decorations based on search
+  const filteredDecorations = decorations.filter(item =>
+    item.decoration_type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Go to profile page
+  const goToProfile = () => {
+    navigate("/DecorationOwnerPage");
+  };
+
   return (
-    <div>
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="brand">WPS Owner Panel</div>
-        <div className="links">
-          <button className="linkBtn profile">Profile</button>
-          <button className="linkBtn" onClick={() => navigate("/ManageDecorationItems")}>
-            Manage Items
+    <div className="dj-management-page">
+      {/* Navbar - مع إضافة زر Profile */}
+      <nav className="owner-navbar">
+        <div className="navbar-left">
+          <div className="navbar-logo">
+            <span className="logo-text">Wedding Planning System</span>
+          </div>
+        </div>
+        
+        <div className="navbar-right">
+          {}
+          <button onClick={goToProfile}>
+            👤 Profile
           </button>
-          <button className="logoutBtn" onClick={handleLogout}>
+          <button className="active">
+            🎨 Manage Items
+          </button>
+          <button onClick={() => setShowModal(true)}>
+            ➕ Add Decoration
+          </button>
+          <button className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </nav>
 
-      <div className="main-container">
+      {/* MAIN CONTENT */}
+      <div className="packages-container">
+        <div className="packages-header">
+          <h2 className="packages-title">Decoration Items Management</h2>
+          
+          {/* Search Section */}
+          <div className="search-section">
+            <div className="search-box">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search by type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Items Table */}
-        <div className="items-section">
-          <h2>Decorations</h2>
-          {loading ? (
-            <p>Loading decorations...</p>
-          ) : decorations.length > 0 ? (
-            <table className="decorations-table">
-              <thead>
+        <div className="table-wrapper">
+          <table className="packages-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Decoration Type</th>
+                <th>Image</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th>Type</th>
-                  <th>Image</th>
-                  <th>Action</th>
+                  <td colSpan="4" className="no-data">
+                    Loading decorations...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {decorations.map((item) => (
+              ) : filteredDecorations.length > 0 ? (
+                filteredDecorations.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.decoration_type}</td>
+                    <td>#{item.id}</td>
                     <td>
-                      <img
-                        src={`/img/decor/${item.imgname}`}
-                        alt={item.decoration_type}
-                        style={{ width: "100px", height: "100px", objectFit: "cover" }}
-                      />
+                      <span className="type-badge">{item.decoration_type}</span>
                     </td>
                     <td>
-                      <button className="deleteBtn" onClick={() => handleDelete(item.id)}>
-                        Delete
-                      </button>
+                      <div className="image-container">
+                        <img
+                          src={`/img/decor/${item.imgname}`}
+                          alt={item.decoration_type}
+                          className="decoration-image"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/80x80?text=No+Image";
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="action-group">
+                        <button 
+                          className="action-btn delete-btn" 
+                          onClick={() => handleDelete(item.id)}
+                          title="Delete"
+                        >
+                          🗑
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No decorations found.</p>
-          )}
-        </div>
-
-        {/* Add New Decoration */}
-        <div className="add-item-section">
-          <h2>Add New Decoration</h2>
-          <form onSubmit={handleAddItem}>
-            <label>
-              Decoration Type:
-              <select value={newType} onChange={(e) => setNewType(e.target.value)}>
-                <option value="">-- Select Decoration Type --</option>
-                <option value="Car Decoration">Car Decoration</option>
-                <option value="Lights">Lights</option>
-                <option value="Flowers">Flowers</option>
-                <option value="Candles">Candles</option>
-                <option value="Extra Decor">Extra Decor</option>
-              </select>
-            </label>
-
-            <label>
-              Image:
-              <input type="file" accept="image/*" onChange={(e) => setNewImage(e.target.files[0])} />
-            </label>
-
-            <button type="submit" className="saveBtn">
-              Add Item
-            </button>
-          </form>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="no-data">
+                    {searchTerm ? "No matching decorations found" : "No decorations found"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Modal Add Decoration */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Add New Decoration Item</h3>
+            <form onSubmit={handleAddItem}>
+              <div className="modal-body">
+                <div className="modal-input-group">
+                  <label>Decoration Type</label>
+                  <select 
+                    className="modal-input"
+                    value={newType} 
+                    onChange={(e) => setNewType(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select Decoration Type --</option>
+                    <option value="Car Decoration">🚗 Car Decoration</option>
+                    <option value="Lights">💡 Lights</option>
+                    <option value="Flowers">🌸 Flowers</option>
+                    <option value="Candles">🕯️ Candles</option>
+                    <option value="Extra Decor">✨ Extra Decor</option>
+                  </select>
+                </div>
+
+                <div className="modal-input-group">
+                  <label>Image</label>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="modal-input"
+                    onChange={(e) => setNewImage(e.target.files[0])}
+                    required
+                  />
+                  {newImage && (
+                    <div className="image-preview">
+                      <img 
+                        src={URL.createObjectURL(newImage)} 
+                        alt="Preview" 
+                        style={{ width: '100px', height: '100px', objectFit: 'cover', marginTop: '10px', borderRadius: '8px' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="modal-btn cancel-btn" onClick={() => setShowModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="modal-btn save-btn">
+                  Add Decoration
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

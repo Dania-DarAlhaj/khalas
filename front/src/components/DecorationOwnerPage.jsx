@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import '../style/DecorationOwnerPage.css'; // راح نضيف ملف CSS جديد
 
 export default function DecorationOwnerDashboard() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
   const [ownerIdVar, setOwnerIdVar] = useState(null);
-const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"]; // عدلي حسب المدن المتوفرة
+  
+  const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza", "Jenin", "Tulkarm", "Qalqilya", "Salfit", "Tubas", "Jericho"];
 
   const userId = sessionStorage.getItem("ownerId_");
 
@@ -37,10 +39,10 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
 
         setUserData(user);
         setFormData({
-          name: user.name,
-          email: user.email,
-          city: user.city,
-          phone: user.phone,
+          name: user.name || "",
+          email: user.email || "",
+          city: user.city || "",
+          phone: user.phone || "",
         });
 
         // جلب بيانات الـ owner
@@ -55,6 +57,10 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
         } else {
           setOwnerData(owner);
           setOwnerIdVar(owner.owner_id);
+          setFormData(prev => ({
+            ...prev,
+            description: owner.description || "",
+          }));
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -72,7 +78,7 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
     navigate("/login");
   };
 
-  const handleEditToggle = () => setEditing(!editing);
+  const handleEditToggle = () => setEditMode(!editMode);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,7 +87,8 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
 
   const handleSave = async () => {
     try {
-      const { data, error } = await supabase
+      // تحديث بيانات المستخدم
+      const { error: userError } = await supabase
         .from("users")
         .update({
           name: formData.name,
@@ -91,13 +98,31 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
         })
         .eq("id", userData.id);
 
-      if (error) {
-        alert("Failed to update profile: " + error.message);
+      if (userError) {
+        alert("Failed to update profile: " + userError.message);
         return;
       }
 
+      // تحديث وصف owner إذا كان موجود
+      if (ownerData && formData.description !== ownerData.description) {
+        const { error: ownerError } = await supabase
+          .from("owners")
+          .update({
+            description: formData.description,
+          })
+          .eq("owner_id", ownerData.owner_id);
+
+        if (ownerError) {
+          alert("Failed to update description: " + ownerError.message);
+          return;
+        }
+      }
+
       setUserData({ ...userData, ...formData });
-      setEditing(false);
+      if (ownerData) {
+        setOwnerData({ ...ownerData, description: formData.description });
+      }
+      setEditMode(false);
       alert("Profile updated successfully!");
     } catch (err) {
       console.error(err);
@@ -105,200 +130,153 @@ const cities = ["Ramallah", "Jerusalem", "Bethlehem", "Nablus", "Hebron", "Gaza"
     }
   };
 
-  if (loading) return <p style={{ padding: "40px" }}>Loading...</p>;
-  if (!userData) return <p style={{ padding: "40px" }}>No user found.</p>;
+  if (loading) return (
+    <div className="decoration-loading">
+      <p>Loading your profile...</p>
+    </div>
+  );
+  
+  if (!userData) return (
+    <div className="decoration-loading">
+      <p>No user found. Please login again.</p>
+    </div>
+  );
 
   return (
-    <div>
-      {/* Navbar */}
-      <nav style={styles.navbar}>
-        <div style={styles.brand}>WPS Owner Panel</div>
-        <div style={styles.links}>
-          <button
-            style={{ ...styles.linkBtn, cursor: "default", fontWeight: "bold" }}
-          >
-            Profile
+    <div className="decoration-owner-page">
+      {/* Navbar - نفس تصميم VenueOwnerPage */}
+      <nav className="navbar">
+        <div className="navbar-logo">
+          <span className="logo-text">Wedding Planning System</span>
+        </div>
+        <div className="navbar-right">
+          <button className={editMode ? "active" : ""} onClick={() => setEditMode(true)}>
+            👤 Profile
           </button>
-          <button
-            style={styles.linkBtn}
-            onClick={() => navigate("/ManageDecorationItems")}
-          >
-            Manage Items
+          <button onClick={() => navigate("/ManageDecorationItems", { state: { ownerId: ownerIdVar } })}>
+            🎨 Manage Items
           </button>
-          <button style={styles.logoutBtn} onClick={handleLogout}>
+          <button className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </nav>
 
-      {/* Profile Card */}
-      <div style={{ padding: "40px" }}>
-        <h2>Decoration Owner Profile</h2>
-        <div style={styles.card}>
-          {/* Editable Fields */}
-          <p>
-            <strong>Name:</strong>{" "}
-            {editing ? (
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-            ) : (
-              userData.name
-            )}
-          </p>
-          <p>
-            <strong>Email:</strong>{" "}
-            {editing ? (
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            ) : (
-              userData.email
-            )}
-          </p>
-     <p>
-  <strong>City:</strong>{" "}
-  {editing ? (
-    <select
-      name="city"
-      value={formData.city}
-      onChange={handleChange}
-    >
-      <option value="">Select City</option>
-      {cities.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
-      ))}
-    </select>
-  ) : (
-    userData.city
-  )}
-</p>
-          <p>
-            <strong>Phone:</strong>{" "}
-            {editing ? (
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            ) : (
-              userData.phone
-            )}
-          </p>
+      {/* Page Title */}
+      <h2>Decoration Owner Dashboard</h2>
+      
+      {/* Profile Section */}
+      <div className="section">
+        <p>Business Owner Information</p>
+        
+        <div className="form-grid">
+          {/* Owner Fields - 2 columns */}
+          <label>
+            <span>Full Name</span>
+            <input 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              disabled={!editMode}
+              placeholder="Enter your full name"
+            />
+          </label>
 
-          {/* Non-editable Fields */}
-          <p><strong>Role:</strong> {userData.role}</p>
-          {ownerData ? (
+          <label>
+            <span>Email</span>
+            <input 
+              name="email" 
+              type="email"
+              value={formData.email} 
+              onChange={handleChange}
+              disabled={!editMode}
+              placeholder="Enter your email"
+            />
+          </label>
+
+          <label>
+            <span>Phone</span>
+            <input 
+              name="phone" 
+              value={formData.phone} 
+              onChange={handleChange}
+              disabled={!editMode}
+              placeholder="Enter your phone number"
+            />
+          </label>
+
+          <label>
+            <span>City</span>
+            <select 
+              name="city" 
+              value={formData.city} 
+              onChange={handleChange} 
+              disabled={!editMode}
+            >
+              <option value="">Select a city</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* Description - Full width */}
+          <label style={{ gridColumn: "1 / -1" }}>
+            <span>Business Description</span>
+            <textarea 
+              name="description" 
+              value={formData.description || ""} 
+              onChange={handleChange}
+              disabled={!editMode}
+              placeholder="Describe your decoration business..."
+              rows="4"
+            />
+          </label>
+
+          {/* Non-editable fields - Read only */}
+          <label>
+            <span>Role</span>
+            <input 
+              value={userData.role || "decoration_owner"} 
+              disabled={true}
+              className="readonly-field"
+            />
+          </label>
+
+          {ownerData && (
             <>
-              <hr />
-              <p><strong>Owner ID:</strong> {ownerData.owner_id}</p>
-              <p><strong>Description:</strong> {ownerData.description}</p>
-              <p><strong>Rate:</strong> {ownerData.rate}</p>
-              <p><strong>Rating Count:</strong> {ownerData.rating_count}</p>
+              <label>
+                <span>⭐ Rating</span>
+                <input 
+                  value={`${ownerData.rate || 0} / 5 (${ownerData.rating_count || 0} reviews)`} 
+                  disabled={true}
+                  className="readonly-field"
+                />
+              </label>
+              
+              <label>
+                <span>🆔 Owner ID</span>
+                <input 
+                  value={ownerData.owner_id || "N/A"} 
+                  disabled={true}
+                  className="readonly-field"
+                />
+              </label>
             </>
-          ) : (
-            <p>No owner data found.</p>
           )}
-
-          {/* Buttons */}
-          <div style={{ marginTop: "20px" }}>
-            {editing ? (
-              <>
-                <button style={styles.saveBtn} onClick={handleSave}>
-                  Save
-                </button>
-                <button style={styles.cancelBtn} onClick={handleEditToggle}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button style={styles.editBtn} onClick={handleEditToggle}>
-                Edit
-              </button>
-            )}
-          </div>
         </div>
       </div>
+
+      {/* Action Buttons */}
+      <button className="edit-btn" onClick={handleEditToggle}>
+        {editMode ? "Cancel" : "Edit Profile"}
+      </button>
+
+      {editMode && (
+        <button type="button" className="save-btn" onClick={handleSave}>
+          Save All Changes
+        </button>
+      )}
     </div>
   );
 }
-
-const styles = {
-  navbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    background: "#D4AF37",
-    padding: "10px 20px",
-    color: "#fff",
-    fontFamily: "Arial, sans-serif",
-  },
-  brand: {
-    fontWeight: "bold",
-    fontSize: "1.4rem",
-  },
-  links: {
-    display: "flex",
-    gap: "15px",
-  },
-  linkBtn: {
-    background: "transparent",
-    border: "none",
-    color: "#fff",
-    cursor: "pointer",
-    fontSize: "1rem",
-  },
-  logoutBtn: {
-    background: "#fff",
-    color: "#D4AF37",
-    border: "none",
-    padding: "5px 12px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-  card: {
-    border: "1px solid #ddd",
-    padding: "20px",
-    borderRadius: "10px",
-    maxWidth: "500px",
-  },
-  editBtn: {
-    background: "#D4AF37",
-    color: "#fff",
-    border: "none",
-    padding: "8px 16px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginRight: "10px",
-  },
-  saveBtn: {
-    background: "#28a745",
-    color: "#fff",
-    border: "none",
-    padding: "8px 16px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginRight: "10px",
-  },
-  cancelBtn: {
-    background: "#dc3545",
-    color: "#fff",
-    border: "none",
-    padding: "8px 16px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-};

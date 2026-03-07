@@ -1,26 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../style/AdminPage.css';
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 
 export default function AdminPage() {
+   const navigate = useNavigate();
   const [admin, setAdmin] = useState({
     id: 1,
     name: 'System Administrator',
-    email: 'admin@weddingplanning.com',
+    email: 'abdullah@gmail.com',
     role: 'Super Admin',
     avatar: 'SA'
   });
 
   const [stats, setStats] = useState({
-    totalVenues: 0,
-    totalCustomers: 0,
-    pendingApprovals: 0,
-    totalRevenue: 0,
-    activeBookings: 0,
-    totalServiceProviders: 0,
-    pendingPayments: 0
+    totalVenues: 13,
+    totalCustomers: 30,
+    pendingApprovals: 20,
+    totalRevenue: 16,
+    activeBookings: 10,
+    totalServiceProviders: 25,
+    pendingPayments: 17
   });
 
   const [customers, setCustomers] = useState([]);
@@ -1282,9 +1284,13 @@ export default function AdminPage() {
               </div>
               
               <div className="d-grid gap-2">
-                <button className="btn btn-outline-danger" style={{ borderRadius: 50 }} onClick={() => alert('Log out')}>
-                  🚪 Logout
-                </button>
+               <button 
+  className="btn btn-outline-danger" 
+  style={{ borderRadius: 50 }} 
+  onClick={() => navigate("/")}
+>
+  🚪 Logout
+</button>
               </div>
             </motion.div>
 
